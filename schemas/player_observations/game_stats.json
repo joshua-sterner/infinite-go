@@ -1,0 +1,42 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/player_observations/game_stats.json",
+    "type": "object",
+    "properties": {
+        "white_stats": {
+            "description": "Stone stats for white team.",
+            "$ref": "#/definitions/stone_stats"
+        },
+        "black_stats": {
+            "description": "Stone stats for white team.",
+            "$ref": "#/definitions/stone_stats"
+        },
+        "total_online_player_count": {
+            "description": "Total number of players currently online",
+            "type": "integer",
+            "minimum": 0
+        },
+        "active_battlegrounds": {
+            "type": "array",
+            "items": {
+                "$ref": "https://infinitego.net/schemas/active_battleground.json"
+            }
+        }
+    },
+    "definitions": {
+        "stone_stats": {
+            "stones_placed": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "territory": {
+                "type": "integer",
+                "minimum": 0
+            },
+            "captures": {
+                "type": "integer",
+                "minimum": 0
+            }
+        }
+    }
+}
