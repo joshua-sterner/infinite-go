@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/coordinate.json",
+    "type": "array",
+    "description": "(x, y)",
+    "items": {
+        "type": "number"
+    },
+    "minItems": 2,
+    "maxItems": 2
+}

@@ -19,7 +19,7 @@
         "active_battlegrounds": {
             "type": "array",
             "items": {
-                "$ref": "https://infinitego.net/schemas/active_battleground.json"
+                "$ref": "https://infinitego.net/schemas/player_observations/active_battleground.json"
             }
         }
     },

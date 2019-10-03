@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/viewport.json",
+    "type": "array",
+    "description": "(top-left, bottom-right)",
+    "items": {
+            "$ref": "https://infinitego.net/schemas/coordinate.json"
+    },
+    "minItems": 2,
+    "maxItems": 2
+}
