@@ -45,5 +45,19 @@
             ]
         }
     },
+    "if": {
+        "properties": {
+            "online": {
+                "const": true
+            }
+        }
+    },
+    "then": {
+        "properties": {
+            "viewport": {
+                "$ref": "https://infinitego.net/schemas/viewport.json"
+            }
+        }
+    },
     "required": ["username", "date_joined", "online", "white_stats", "black_stats"]
 }

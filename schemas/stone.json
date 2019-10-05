@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/stone.json",
+    "type": "object",
+    "properties": {
+        "placed_by": {
+            "$ref": "https://infinitego.net/schemas/player_observations/user.json"
+        },
+        "placed_on": {
+            "$ref": "https://infinitego.net/schemas/datetime.json"
+        },
+        "placed_at": {
+            "$ref": "https://infinitego.net/schemas/coordinate.json"
+        },
+        "color": {
+            "type": "string",
+            "enum": ["black", "white"]
+        }
+    },
+    "required": ["placed_by", "placed_on", "placed_at", "color"]
+}

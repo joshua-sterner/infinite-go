@@ -1,0 +1,61 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/player_observations/events/battleground.json",
+    "definitions": {
+        "active_battleground_merged": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "active_battleground_merged"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/player_observations/active_battleground.json"
+                }
+            ]
+        },
+        "active_battleground_split": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "active_battleground_merged"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/player_observations/active_battleground.json"
+                }
+            ]
+        },
+        "active_battleground_message": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "active_battleground_mssage"
+                },
+                {
+                    "type": "string"
+                }
+            ]
+        },
+        "player_entered_active_battleground": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "player_entered_active_battleground"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/player_observations/user.json"
+                }
+            ]
+        },
+        "player_exited_active_battleground": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "player_exited_active_battleground"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/player_observations/user.json"
+                }
+            ]
+        }
+    }
+}

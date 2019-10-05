@@ -1,0 +1,141 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/player_observations/events/gameplay.json",
+    "definitions": {
+        "player_turn_changed": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "player_turn_changed"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "username": {
+                            "type": "string"
+                        },
+                        "time_remaining": {
+                            "type": "number",
+                            "description": "Time remaining for this player to make a move, in seconds."
+                        }
+                    },
+                    "required": ["username", "time_remaining"]
+                }
+            ]
+        },
+        "viewport_changed": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "viewport_changed"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/viewport.json"
+                }
+            ]
+        },
+        "stones_included_in_territory_computation": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "stones_included_in_territory_computation"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://infinitego.net/schemas/stone.json"
+                    }
+                }
+            ]
+        },
+        "stone_placed_in_viewport": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "stone_placed_in_viewport"
+                },
+                {
+                    "$ref": "https://infinitego.net/schemas/stone.json"
+                }
+            ]
+        },
+        "stone_captured_in_viewport": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "stone_captured_in_viewport"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "capturing_player": {
+                            "type": "string"
+                        },
+                        "location": {
+                            "$ref": "https://infinitego.net/schemas/coordinate.json"
+                        }
+                    }
+                }
+            ]
+        },
+        "new_turn_time_limit_proposed": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "new_turn_time_limit_proposed"
+                },
+                {
+                    "$ref": "#/definitions/turn_time_limit_proposal"
+                }
+            ]
+        },
+        "new_turn_time_limit_vote_results": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "new_turn_time_limit_vote_results"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "proposal": {
+                            "$ref": "#/definitions/turn_time_limit_proposal"
+                        },
+                        "votes_for": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "votes_against": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "accepted": {
+                            "type": "boolean"
+                        }
+                    },
+                    "required": ["proposal", "votes_for", "votes_against", "accepted"]
+                }
+            ]
+        },
+        "turn_time_limit_proposal": {
+            "type": "object",
+            "properties": {
+                "vote_time_limit": {
+                    "description": "The time until votes on this proposal are no longer accepted, in seconds.",
+                    "type": "number",
+                    "miminum": 0
+                },
+                "proposed_time_limit": {
+                    "description": "The proposed turn time limit, in seconds.",
+                    "type": "number",
+                    "minimum": 0
+                },
+                "proposed_by": {
+                    "description": "The username of the player who proposed this turn time limit.",
+                    "type": "string"
+                }
+            },
+            "required": ["vote_time_limit", "proposed_time_limit", "proposed_by"]
+        }
+    }
+}
