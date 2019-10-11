@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/player_actions/register.json",
+    "definitions": {
+        "request": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            },
+            "required": ["password", "email"]
+        },
+        "response": {
+            "type": "object",
+            "failure_reason": {
+                "type": "string"
+            }
+        }
+    }
+}
