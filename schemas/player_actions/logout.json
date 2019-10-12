@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas/player_actions/logout.json",
+    "definitions": {
+        "response": {
+            "type": "object",
+            "properties": {
+                "failure_reason": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

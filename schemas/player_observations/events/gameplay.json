@@ -23,6 +23,21 @@
                 }
             ]
         },
+        "player_turn_order_changed": {
+            "type": "array",
+            "items": [
+                {
+                    "const": "player_turn_order_changed"
+                },
+                {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://infinitego.net/schemas/player_observations/user.json"
+                    },
+                    "description": "Players in turn order. This event may be triggered by a player switching teams."
+                }
+            ]
+        },
         "viewport_changed": {
             "type": "array",
             "items": [

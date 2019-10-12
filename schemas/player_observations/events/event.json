@@ -15,6 +15,7 @@
         {"$ref": "https://infinitego.net/schemas/player_observations/events/battleground.json#/definitions/player_entered_active_battleground"},
         {"$ref": "https://infinitego.net/schemas/player_observations/events/battleground.json#/definitions/player_exited_active_battleground"},
         {"$ref": "https://infinitego.net/schemas/player_observations/events/gameplay.json#/definitions/player_turn_changed"},
+        {"$ref": "https://infinitego.net/schemas/player_observations/events/gameplay.json#/definitions/player_turn_order_changed"},
         {"$ref": "https://infinitego.net/schemas/player_observations/events/gameplay.json#/definitions/viewport_changed"},
         {"$ref": "https://infinitego.net/schemas/player_observations/events/gameplay.json#/definitions/stones_included_in_territory_computation"},
         {"$ref": "https://infinitego.net/schemas/player_observations/events/gameplay.json#/definitions/stone_placed_in_viewport"},

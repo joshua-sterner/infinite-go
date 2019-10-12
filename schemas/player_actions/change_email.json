@@ -1,6 +1,6 @@
 {
     "$schema": "http://json-schema.org/schema#",
-    "$id": "https://infinitego.net/schemas/player_actions/register.json",
+    "$id": "https://infinitego.net/schemas/player_actions/change_email.json",
     "definitions": {
         "request": {
             "type": "object",
@@ -8,11 +8,11 @@
                 "password": {
                     "type": "string"
                 },
-                "email": {
+                "new_email": {
                     "type": "string"
                 }
             },
-            "required": ["password", "email"]
+            "required": ["password", "new_email"]
         },
         "response": {
             "type": "object",
