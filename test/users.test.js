@@ -1,6 +1,6 @@
-var Users = require('../users.js').Users;
-var child_process = require('child_process');
-const {Pool, Client} = require('pg');
+const Users = require('../users.js').Users;
+const child_process = require('child_process');
+const db = require('./test_db.js');
 
 test_user_1 = {
     'id': 1,
@@ -23,32 +23,15 @@ function users_equal(lhs, rhs) {
     //TODO viewport, date_joined
 }
 
-const mock_throwing_db_connection_pool = {};
-mock_throwing_db_connection_pool.query = () => {
-    const err = new Error('Could not complete query.');
-    if (arguments.length == 0 || typeof(arguments[arguments.length-1]) != 'function') {
-        return new Promise((resolve, reject) => {
-            reject(err);
-        });
-    } else {
-        const callback = arguments[arguments.length-1];
-        callback(err, null);
-    }
-}
-
 describe('Users', () => {
     let db_connection_pool;
     let users;
     before(() => {
-        db_connection_pool = new Pool({
-            user: '',
-            host: 'localhost',
-            database: 'infinite-go-users-test',
-        });
+        db_connection_pool = new db.Pool(db.connection_settings);
     });
 
     beforeEach(() => {
-        child_process.execSync('psql -d infinite-go-users-test -f test/users.test.pre.sql');
+        child_process.execSync(`psql ${db.connection_url} -f test/users.test.pre.sql`);
         users = new Users(db_connection_pool);
     });
 
@@ -86,7 +69,7 @@ describe('Users', () => {
             });
         });
         it('Should pass error on query error', (done) => {
-            let users = new Users(mock_throwing_db_connection_pool);
+            let users = new Users(db.mock_throwing_pool);
             users.get_by_id(1, (err, user) => {
                 if (err instanceof Error) {
                     return done();
@@ -121,7 +104,7 @@ describe('Users', () => {
             });
         });
         it('Should pass error on query error', (done) => {
-            let users = new Users(mock_throwing_db_connection_pool);
+            let users = new Users(db.mock_throwing_pool);
             users.get_by_username('first_test_user', (err, user) => {
                 if (err instanceof Error) {
                     return done();
@@ -129,10 +112,6 @@ describe('Users', () => {
                 return done('Did not pass Error to callback.');
             });
         });
-    });
-
-    afterEach(() => {
-        child_process.execSync('psql -d infinite-go-users-test -f test/users.test.post.sql');
     });
 
     after(() => {
