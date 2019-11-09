@@ -23,8 +23,22 @@ function users_equal(lhs, rhs) {
     //TODO viewport, date_joined
 }
 
-describe('Users', function() {
+const mock_throwing_db_connection_pool = {};
+mock_throwing_db_connection_pool.query = () => {
+    const err = new Error('Could not complete query.');
+    if (arguments.length == 0 || typeof(arguments[arguments.length-1]) != 'function') {
+        return new Promise((resolve, reject) => {
+            reject(err);
+        });
+    } else {
+        const callback = arguments[arguments.length-1];
+        callback(err, null);
+    }
+}
+
+describe('Users', () => {
     let db_connection_pool;
+    let users;
     before(() => {
         db_connection_pool = new Pool({
             user: '',
@@ -35,15 +49,12 @@ describe('Users', function() {
 
     beforeEach(() => {
         child_process.execSync('psql -d infinite-go-users-test -f test/users.test.pre.sql');
+        users = new Users(db_connection_pool);
     });
 
-    describe('#get_by_id', function() {
-        it('Should retrieve pre-created user with id 1', function(done) {
-            const users = new Users(db_connection_pool);
+    describe('#get_by_id', () => {
+        it('Should retrieve pre-created user with id 1', (done) => {
             users.get_by_id(1, (err, user) => {
-                if (err) {
-                    return done(err);
-                }
                 if (users_equal(user, test_user_1)) {
                     return done();
                 }
@@ -51,15 +62,71 @@ describe('Users', function() {
             });
         });
         it('Should retrieve pre-created user with id 2', (done) => {
-            const users = new Users(db_connection_pool);
             users.get_by_id(2, (err, user) => {
-                if (err) {
-                    return done(err);
-                }
                 if (!users_equal(user, test_user_2)) {
                     return done('Didn\'t retrieve expected user.');
                 }
                 return done();
+            });
+        });
+        it('Should pass null to error parameter on successful retrieval', (done) => {
+            users.get_by_id(1, (err, user) => {
+                if (err === null) {
+                    return done();
+                }
+                return done('err was not null');
+            });
+        });
+        it('Should pass error on non-existent id', (done) => {
+            users.get_by_id(123, (err, user) => {
+                if (err instanceof Error) {
+                    return done();
+                }
+                return done('Did not pass Error to callback.');
+            });
+        });
+        it('Should pass error on query error', (done) => {
+            let users = new Users(mock_throwing_db_connection_pool);
+            users.get_by_id(1, (err, user) => {
+                if (err instanceof Error) {
+                    return done();
+                }
+                return done('Did not pass Error to callback.');
+            });
+        });
+    });
+    describe('#get_by_username', () => {
+        it('Should retrieve pre-created user with username first_test_user', (done) => {
+            users.get_by_username('first_test_user', (err, user) => {
+                if (!users_equal(user, test_user_1)) {
+                    return done('Didn\'t retrieve expected user.');
+                }
+                return done();
+            });
+        });
+        it('Should pass null to error parameter on successful retrieval', (done) => {
+            users.get_by_username('first_test_user', (err, user) => {
+                if (err === null) {
+                    return done();
+                }
+                return done('err was not null.');
+            });
+        });
+        it('Should pass error on non-existent user', (done) => {
+            users.get_by_username('nonexistent', (err, user) => {
+                if (err instanceof Error) {
+                    return done();
+                }
+                return done('Did not pass Error to callback.');
+            });
+        });
+        it('Should pass error on query error', (done) => {
+            let users = new Users(mock_throwing_db_connection_pool);
+            users.get_by_username('first_test_user', (err, user) => {
+                if (err instanceof Error) {
+                    return done();
+                }
+                return done('Did not pass Error to callback.');
             });
         });
     });
@@ -67,6 +134,7 @@ describe('Users', function() {
     afterEach(() => {
         child_process.execSync('psql -d infinite-go-users-test -f test/users.test.post.sql');
     });
+
     after(() => {
         db_connection_pool.end();
     });

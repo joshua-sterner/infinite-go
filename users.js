@@ -10,14 +10,26 @@ class Users {
     get_by_id(id, cb) {
 
         this.db_connection_pool
-            .query(`SELECT * FROM USERS WHERE ID = ${id}`)
+            .query(`SELECT * FROM users WHERE id = ${id}`)
             .then((res) => {
+                if (res.rows.length == 0) {
+                    return cb(new Error(`User with id ${id} does not exist in database`), null);
+                }
                 cb(null, res.rows[0]);
-                console.log(res.rows[0]);
-            });
+            })
+            .catch(err => cb(err, null));
     }
 
     get_by_username(username, cb) {
+        this.db_connection_pool
+            .query(`SELECT * FROM users WHERE username = \'${username}\'`)
+            .then((res) => {
+                if (res.rows.length == 0) {
+                    return cb(new Error(`User with username ${username} does not exist in database`), null);
+                }
+                cb(null, res.rows[0]);
+            })
+            .catch(err => cb(err, null));
     }
 
     update(user, cb) {
