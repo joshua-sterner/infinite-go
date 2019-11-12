@@ -25,7 +25,7 @@ class Users {
     get_by_id(id, cb) {
 
         this.db_connection_pool
-            .query(`SELECT * FROM users WHERE id = ${id}`)
+            .query('SELECT * FROM users WHERE id=$1', [id])
             .then((res) => {
                 if (res.rows.length == 0) {
                     return cb(new Error(`User with id ${id} does not exist in database`), null);
@@ -37,7 +37,7 @@ class Users {
 
     get_by_username(username, cb) {
         this.db_connection_pool
-            .query(`SELECT * FROM users WHERE username = \'${username}\'`)
+            .query('SELECT * FROM users WHERE username=$1', [username])
             .then((res) => {
                 if (res.rows.length == 0) {
                     return cb(new Error(`User with username ${username} does not exist in database`), null);
@@ -48,6 +48,15 @@ class Users {
     }
 
     update(user, cb) {
+        this.db_connection_pool
+            .query('UPDATE users SET username=$2, email=$3, password=$4 WHERE id=$1', [user.id, user.username, user.email, user.password])
+            .then((res) => {
+                if (res.rowCount == 1) {
+                    return cb(null);
+                }
+                return cb(new Error('Failed to update user'));
+            })
+            .catch(err => cb(err, null));
     }
 
     delete_by_id(id, cb) {

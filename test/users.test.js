@@ -109,12 +109,15 @@ describe('Users', () => {
         });
     });
     describe('#create', () => {
-        let test_user = {
-            'id': 123,
-            'username': 'custom_id_user',
-            'email': 'another@email.com',
-            'password': 'this_is_a_password'
-        };
+        let test_user;
+        beforeEach(() => {
+            test_user = {
+                'id': 123,
+                'username': 'custom_id_user',
+                'email': 'another@email.com',
+                'password': 'this_is_a_password'
+            };
+        });
         it('successfully creates user with custom id', (done) => {
             users.create(test_user, (err, id) => {
                 users.get_by_id(test_user.id, (err, user) => {
@@ -242,7 +245,73 @@ describe('Users', () => {
             });
         });
     });
-
+    describe('#update', () => {
+        let test_user;
+        beforeEach(() => {
+            test_user = {
+                'id': 1,
+                'username': 'updated_username',
+                'email': 'updated@email.com',
+                'password': 'updated_password'
+            };
+        });
+        it('successfully updates user', (done) => {
+            users.update(test_user, (err) => {
+                users.get_by_id(1, (err, user) => {
+                    if (users_equal(test_user, user)) {
+                        return done();
+                    }
+                    return done('Failed to update user in db');
+                });
+            });
+        });
+        it('err null on successful update of user', (done) => {
+            users.update(test_user, (err) => {
+                if (err === null) {
+                    return done();
+                }
+                return done('err is not null');
+            });
+        });
+        it('passes error when id not provided', (done) => {
+            delete test_user.id;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when username not provided', (done) => {
+            delete test_user.username;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when email not provided', (done) => {
+            delete test_user.email;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when password not provided', (done) => {
+            delete test_user.password;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when user doesn\'t exist in db', (done) => {
+            test_user.id = 123;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+    });
+    describe('#delete_by_id', () => {
+    });
     after(() => {
         db_connection_pool.end();
     });
