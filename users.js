@@ -5,6 +5,21 @@ class Users {
     }
 
     create(user, cb) {
+        if (user.id) {
+            this.db_connection_pool
+                .query('INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4)', [user.id, user.username, user.email, user.password])
+                .then((res) => {
+                    cb(null, user.id);
+                })
+                .catch(err => cb(err, null));
+        } else {
+            this.db_connection_pool
+                .query('INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id', [user.username, user.email, user.password])
+                .then((res) => {
+                    cb(null, res.rows[0].id);
+                })
+                .catch(err => cb(err, null));
+        }
     }
 
     get_by_id(id, cb) {
