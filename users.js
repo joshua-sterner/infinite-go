@@ -72,12 +72,17 @@ class Users {
     }
 
     delete_by_username(username, cb) {
+        this.db_connection_pool
+            .query('DELETE FROM users WHERE username=$1', [username])
+            .then((res) => {
+                if (res.rowCount == 1) {
+                    return cb(null);
+                }
+                return cb(new Error('Failed to delete user.'));
+            })
+            .catch(err => cb(err, null));
     }
 
-}
-
-function is_valid_user_create(user) {
-    console.log("is_valid_user_create");
 }
 
 module.exports = {'Users': Users};
