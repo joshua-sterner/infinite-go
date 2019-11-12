@@ -6,22 +6,42 @@ const test_user_1 = {
     'id': 1,
     'username': 'first_test_user',
     'email': 'nobody@nonexistant.tld',
-    'password': 'pw1'
+    'password': 'pw1',
+    'viewport': {
+        'top': 10,
+        'right': 11,
+        'bottom': 12,
+        'left': 13
+    }
 }
 const test_user_2 = {
     'id': 2,
     'username': 'second_test_user',
     'email': 'second@example.io',
-    'password': 'pw2'
+    'password': 'pw2',
+    'viewport': {
+        'top': 6,
+        'right': 11,
+        'bottom': -6,
+        'left': -11
+    }
 }
 
 function users_equal(lhs, rhs) {
     return lhs.id === rhs.id &&
         lhs.username === rhs.username &&
         lhs.email === rhs.email &&
-        lhs.password === rhs.password;
-    //TODO viewport, date_joined
+        lhs.password === rhs.password &&
+        lhs.viewport && rhs.viewport &&
+        lhs.viewport.top === rhs.viewport.top &&
+        lhs.viewport.right === rhs.viewport.right &&
+        lhs.viewport.bottom === rhs.viewport.bottom &&
+        lhs.viewport.left === rhs.viewport.left;
+    //TODO date_joined
 }
+
+
+//TODO date_joined tests
 
 function expect_error_from_callback(obj, done) {
     if (obj instanceof Error) {
@@ -48,6 +68,8 @@ describe('Users', () => {
                 if (users_equal(user, test_user_1)) {
                     return done();
                 }
+                console.log(user);
+                console.log(test_user_1);
                 return done('Didn\'t retrieve expected user.');
             });
         });
@@ -115,7 +137,13 @@ describe('Users', () => {
                 'id': 123,
                 'username': 'custom_id_user',
                 'email': 'another@email.com',
-                'password': 'this_is_a_password'
+                'password': 'this_is_a_password',
+                'viewport': {
+                    'top': 1,
+                    'right': 2,
+                    'bottom': 3,
+                    'left': 4
+                }
             };
         });
         it('successfully creates user with custom id', (done) => {
@@ -238,6 +266,36 @@ describe('Users', () => {
                 expect_error_from_callback(err, done);
             });
         });
+        it('passes error when viewport not provided', (done) => {
+            delete test_user.viewport;
+            users.create(test_user, (err, id) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.top not provided', (done) => {
+            delete test_user.viewport.top;
+            users.create(test_user, (err, id) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.right not provided', (done) => {
+            delete test_user.viewport.right;
+            users.create(test_user, (err, id) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.bottom not provided', (done) => {
+            delete test_user.viewport.bottom;
+            users.create(test_user, (err, id) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.left not provided', (done) => {
+            delete test_user.viewport.left;
+            users.create(test_user, (err, id) => {
+                expect_error_from_callback(err, done);
+            });
+        });
         it('passes error on query error', (done) => {
             let users = new Users(db.mock_throwing_pool);
             users.create(test_user, (err, id) => {
@@ -245,6 +303,7 @@ describe('Users', () => {
             });
         });
     });
+
     describe('#update', () => {
         let test_user;
         beforeEach(() => {
@@ -252,7 +311,13 @@ describe('Users', () => {
                 'id': 1,
                 'username': 'updated_username',
                 'email': 'updated@email.com',
-                'password': 'updated_password'
+                'password': 'updated_password',
+                'viewport': {
+                    'top': 1,
+                    'right': 2,
+                    'bottom': 3,
+                    'left': 4
+                }
             };
         });
         it('successfully updates user', (done) => {
@@ -293,6 +358,36 @@ describe('Users', () => {
         });
         it('passes error when password not provided', (done) => {
             delete test_user.password;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport not provided', (done) => {
+            delete test_user.viewport;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.top not provided', (done) => {
+            delete test_user.viewport.top;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.right not provided', (done) => {
+            delete test_user.viewport.right;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.bottom not provided', (done) => {
+            delete test_user.viewport.bottom;
+            users.update(test_user, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error when viewport.left not provided', (done) => {
+            delete test_user.viewport.left;
             users.update(test_user, (err) => {
                 expect_error_from_callback(err, done);
             });
@@ -371,3 +466,4 @@ describe('Users', () => {
     });
 });
 
+//TODO abstract test for error on missing value
