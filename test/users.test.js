@@ -40,7 +40,6 @@ function users_equal(lhs, rhs) {
     //TODO date_joined
 }
 
-
 //TODO date_joined tests
 
 function expect_error_from_callback(obj, done) {
@@ -248,52 +247,12 @@ describe('Users', () => {
                 });
             });
         });
-        it('passes error when username not provided', (done) => {
-            delete test_user.username;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when email not provided', (done) => {
-            delete test_user.email;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when password not provided', (done) => {
-            delete test_user.password;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport not provided', (done) => {
-            delete test_user.viewport;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.top not provided', (done) => {
-            delete test_user.viewport.top;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.right not provided', (done) => {
-            delete test_user.viewport.right;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.bottom not provided', (done) => {
-            delete test_user.viewport.bottom;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.left not provided', (done) => {
-            delete test_user.viewport.left;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
+        ['username', 'email', 'password', 'viewport',
+        'viewport.top', 'viewport.right', 'viewport.left',
+        'viewport.bottom'].forEach((field) => {
+            it(`passes error when ${field} not provided`, (done) => {
+                eval('delete test_user.'+field);
+                users.create(test_user, (err, id) => expect_error_from_callback(err, done));
             });
         });
         it('passes error on query error', (done) => {
@@ -338,60 +297,16 @@ describe('Users', () => {
                 return done('err is not null');
             });
         });
-        it('passes error when id not provided', (done) => {
-            delete test_user.id;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
+
+        ['id', 'username', 'email', 'password', 'viewport',
+        'viewport.top', 'viewport.right', 'viewport.left',
+        'viewport.bottom'].forEach((field) => {
+            it(`passes error when ${field} not provided`, (done) => {
+                eval('delete test_user.'+field);
+                users.update(test_user, err => expect_error_from_callback(err, done));
             });
         });
-        it('passes error when username not provided', (done) => {
-            delete test_user.username;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when email not provided', (done) => {
-            delete test_user.email;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when password not provided', (done) => {
-            delete test_user.password;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport not provided', (done) => {
-            delete test_user.viewport;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.top not provided', (done) => {
-            delete test_user.viewport.top;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.right not provided', (done) => {
-            delete test_user.viewport.right;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.bottom not provided', (done) => {
-            delete test_user.viewport.bottom;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error when viewport.left not provided', (done) => {
-            delete test_user.viewport.left;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
+
         it('passes error when user doesn\'t exist in db', (done) => {
             test_user.id = 123;
             users.update(test_user, (err) => {
