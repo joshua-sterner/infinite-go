@@ -60,6 +60,15 @@ class Users {
     }
 
     delete_by_id(id, cb) {
+        this.db_connection_pool
+            .query('DELETE FROM users WHERE id=$1', [id])
+            .then((res) => {
+                if (res.rowCount == 1) {
+                    return cb(null);
+                }
+                return cb(new Error('Failed to delete user'));
+            })
+            .catch(err => cb(err, null));
     }
 
     delete_by_username(username, cb) {

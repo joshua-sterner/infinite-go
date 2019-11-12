@@ -311,6 +311,32 @@ describe('Users', () => {
         });
     });
     describe('#delete_by_id', () => {
+        it('successfully deletes user from db', (done) => {
+            users.delete_by_id(1, (err) => {
+                users.get_by_id(1, (err, user) => {
+                    expect_error_from_callback(err, done);
+                });
+            });
+        });
+        it('err is null on successful deletion of user', (done) => {
+            users.delete_by_id(1, (err) => {
+                if (err === null) {
+                    return done();
+                }
+                return done('err is not null');
+            });
+        });
+        it('passes error on invalid id', (done) => {
+            users.delete_by_id(123, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('passes error on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.delete_by_id(1, (err) => {
+                expect_error_from_callback(err, done);
+            });
+        });
     });
     after(() => {
         db_connection_pool.end();
