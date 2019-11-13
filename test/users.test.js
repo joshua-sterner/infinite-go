@@ -7,6 +7,7 @@ const test_user_1 = {
     'username': 'first_test_user',
     'email': 'nobody@nonexistant.tld',
     'password': 'pw1',
+    'date_created': '2019-11-13T15:13:12.345Z',
     'viewport': {
         'top': 10,
         'right': 11,
@@ -19,6 +20,7 @@ const test_user_2 = {
     'username': 'second_test_user',
     'email': 'second@example.io',
     'password': 'pw2',
+    'date_created': '2012-01-23T12:34:56.789Z',
     'viewport': {
         'top': 6,
         'right': 11,
@@ -32,15 +34,21 @@ function users_equal(lhs, rhs) {
         lhs.username === rhs.username &&
         lhs.email === rhs.email &&
         lhs.password === rhs.password &&
+        lhs.date_created === rhs.date_created &&
         lhs.viewport && rhs.viewport &&
         lhs.viewport.top === rhs.viewport.top &&
         lhs.viewport.right === rhs.viewport.right &&
         lhs.viewport.bottom === rhs.viewport.bottom &&
         lhs.viewport.left === rhs.viewport.left;
-    //TODO date_joined
 }
 
-//TODO date_joined tests
+function timestamps_equal(lhs, rhs) {
+    const max_time_delta = 4; // milliseconds
+    const ms_lhs = new Date(lhs).getTime();
+    const ms_rhs = new Date(rhs).getTime();
+    const time_delta = Math.abs(ms_lhs - ms_rhs);
+    return time_delta < max_time_delta;
+}
 
 function expect_error_from_callback(obj, done) {
     if (obj instanceof Error) {
@@ -67,8 +75,6 @@ describe('Users', () => {
                 if (users_equal(user, test_user_1)) {
                     return done();
                 }
-                console.log(user);
-                console.log(test_user_1);
                 return done('Didn\'t retrieve expected user.');
             });
         });
@@ -137,6 +143,7 @@ describe('Users', () => {
                 'username': 'custom_id_user',
                 'email': 'another@email.com',
                 'password': 'this_is_a_password',
+                'date_created': '4321-01-23T12:34:56.789Z',
                 'viewport': {
                     'top': 1,
                     'right': 2,
@@ -206,6 +213,43 @@ describe('Users', () => {
                 return done('err is not null');
             });
         });
+        it('successful creation of user without supplied date_created', (done) => {
+            delete test_user.date_created;
+            users.create(test_user, (err, id) => {
+                users.get_by_id(id, (err, user) => {
+                    test_user.date_created = user.date_created;
+                    if (users_equal(user, test_user)) {
+                        return done();
+                    }
+                    return done('User not created successfully.');
+                });
+            });
+        });
+        it('user created without supplied date_created uses current time when id provided', (done) => {
+            delete test_user.date_created;
+            const now = new Date();
+            users.create(test_user, (err, id) => {
+                users.get_by_id(id, (err, user) => {
+                    if (timestamps_equal(user.date_created, now.toJSON())) {
+                        return done();
+                    }
+                    return done('default timestamp not current time');
+                });
+            });
+        });
+        it('user created without supplied date_created uses current time when id not provided', (done) => {
+            delete test_user.id;
+            delete test_user.date_created;
+            const now = new Date();
+            users.create(test_user, (err, id) => {
+                users.get_by_id(id, (err, user) => {
+                    if (timestamps_equal(user.date_created, now.toJSON())) {
+                        return done();
+                    }
+                    return done('default timestamp not current time');
+                });
+            });
+        });
         it('passes error when provided user id is not unique', (done) => {
             // user with id 1 already exists in test database
             test_user.id = 1;
@@ -271,6 +315,7 @@ describe('Users', () => {
                 'username': 'updated_username',
                 'email': 'updated@email.com',
                 'password': 'updated_password',
+                'date_created': '4321-01-23T12:34:56.789Z',
                 'viewport': {
                     'top': 1,
                     'right': 2,
@@ -279,7 +324,7 @@ describe('Users', () => {
                 }
             };
         });
-        it('successfully updates user', (done) => {
+        it('successfully updates user when date_created is provided', (done) => {
             users.update(test_user, (err) => {
                 users.get_by_id(1, (err, user) => {
                     if (users_equal(test_user, user)) {
@@ -297,8 +342,7 @@ describe('Users', () => {
                 return done('err is not null');
             });
         });
-
-        ['id', 'username', 'email', 'password', 'viewport',
+        ['id', 'username', 'email', 'password', 'date_created', 'viewport',
         'viewport.top', 'viewport.right', 'viewport.left',
         'viewport.bottom'].forEach((field) => {
             it(`passes error when ${field} not provided`, (done) => {
@@ -380,5 +424,3 @@ describe('Users', () => {
         db_connection_pool.end();
     });
 });
-
-//TODO abstract test for error on missing value
