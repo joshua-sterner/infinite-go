@@ -1,0 +1,31 @@
+body {
+    display: grid;
+    font-family: sans;
+}
+
+.logo {
+    height: 16em;
+    width: 16em;
+    margin: auto;
+}
+
+body h2 {
+    text-align: center;
+}
+body h3 {
+    text-align: center;
+}
+
+body form {
+    margin: 1em auto;
+}
+form label {
+    display: block;
+    margin: 0em auto 0.25em auto;
+}
+
+form input {
+    display: block;
+    margin: auto;
+    margin-bottom: 1.5em;
+}
