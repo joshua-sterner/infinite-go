@@ -22,9 +22,10 @@ function make_db_connection_url(db_connection_settings) {
     if (db_connection_settings.port) {
         url += ':' + db_connection_settings.port;
     }
-    if (db_connection_settings.database) {
-        url += '/' + db_connection_settings.database;
+    if (!db_connection_settings.database) {
+        throw new Error(`database field is required in ${db_connection_settings_filename}`);
     }
+    url += '/' + db_connection_settings.database;
     return url;
 }
 
