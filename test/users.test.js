@@ -94,15 +94,27 @@ describe('Users', () => {
                 return done('err was not null');
             });
         });
-        it('Should pass error on non-existent id', (done) => {
+        it('Should pass null error and user on non-existent id', (done) => {
             users.get_by_id(123, (err, user) => {
-                expect_error_from_callback(err, done);
+                if (err === null && user === null) {
+                    return done();
+                }
+                return done('err && user must be null');
             });
         });
         it('Should pass error on query error', (done) => {
             let users = new Users(db.mock_throwing_pool);
             users.get_by_id(1, (err, user) => {
                 expect_error_from_callback(err, done);
+            });
+        });
+        it('Should pass null to user parameter on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.get_by_id(test_user_1.id, (err, user) => {
+                if (user === null) {
+                    return done();
+                }
+                return done('user must be null.');
             });
         });
     });
@@ -123,15 +135,68 @@ describe('Users', () => {
                 return done('err was not null.');
             });
         });
-        it('Should pass error on non-existent user', (done) => {
+        it('Should pass null error and user on non-existent user', (done) => {
             users.get_by_username('nonexistent', (err, user) => {
-                expect_error_from_callback(err, done);
+                if (err === null && user === null) {
+                    return done();
+                }
+                return done('err and user must be null.');
             });
         });
         it('Should pass error on query error', (done) => {
             let users = new Users(db.mock_throwing_pool);
             users.get_by_username('first_test_user', (err, user) => {
                 expect_error_from_callback(err, done);
+            });
+        });
+        it('Should pass null to user parameter on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.get_by_username(test_user_1.username, (err, user) => {
+                if (user === null) {
+                    return done();
+                }
+                return done('user must be null.');
+            });
+        });
+    });
+    describe('#get_by_email', () => {
+        it('Should retrieve pre-created user', (done) => {
+            users.get_by_email(test_user_1.email, (err, user) => {
+                if (!users_equal(user, test_user_1)) {
+                    return done('Didn\'t retrieve expected user.');
+                }
+                return done();
+            });
+        });
+        it('Should pass null to error parameter on successful retrieval', (done) => {
+            users.get_by_email(test_user_1.email, (err, user) => {
+                if (err === null) {
+                    return done();
+                }
+                return done('err must be null.');
+            });
+        });
+        it('Should pass null error and user on non-existent user', (done) => {
+            users.get_by_email('nonexistent', (err, user) => {
+                if (err === null && user === null) {
+                    return done();
+                }
+                return done('err and user must be null.');
+            });
+        });
+        it('Should pass error on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.get_by_email(test_user_1.email, (err, user) => {
+                expect_error_from_callback(err, done);
+            });
+        });
+        it('Should pass null to user parameter on query error', (done) => {
+            let users = new Users(db.mock_throwing_pool);
+            users.get_by_email(test_user_1.email, (err, user) => {
+                if (user === null) {
+                    return done();
+                }
+                return done('user must be null.');
             });
         });
     });
@@ -368,7 +433,10 @@ describe('Users', () => {
         it('successfully deletes user from db', (done) => {
             users.delete_by_id(1, (err) => {
                 users.get_by_id(1, (err, user) => {
-                    expect_error_from_callback(err, done);
+                    if (user === null) {
+                        return done();
+                    }
+                    return done('user not removed from db');
                 });
             });
         });
@@ -396,7 +464,10 @@ describe('Users', () => {
         it('successfully deletes user from db', (done) => {
             users.delete_by_username(test_user_1.username, (err) => {
                 users.get_by_username(test_user_1.username, (err, user) => {
-                    expect_error_from_callback(err, done);
+                    if (user === null) {
+                        return done();
+                    }
+                    return done('user not removed from db.');
                 });
             });
         });

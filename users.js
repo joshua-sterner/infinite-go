@@ -50,7 +50,7 @@ class Users {
             .query('SELECT id, username, password, email, to_char(date_created, \'YYYY-MM-DD"T"HH24:MI:SS.MSZ\') AS date_created, viewport_top, viewport_right, viewport_bottom, viewport_left FROM users WHERE id=$1', [id])
             .then((res) => {
                 if (res.rows.length == 0) {
-                    return cb(new Error(`User with id ${id} does not exist in database`), null);
+                    return cb(null, null);
                 }
                cb(null, db_user_to_user(res.rows[0]));
             })
@@ -62,9 +62,21 @@ class Users {
             .query('SELECT id, username, password, email, to_char(date_created, \'YYYY-MM-DD"T"HH24:MI:SS.MSZ\') AS date_created, viewport_top, viewport_right, viewport_bottom, viewport_left FROM users WHERE username=$1', [username])
             .then((res) => {
                 if (res.rows.length == 0) {
-                    return cb(new Error(`User with username ${username} does not exist in database`), null);
+                    return cb(null, null);
                 }
                 cb(null, db_user_to_user(res.rows[0]));
+            })
+            .catch(err => cb(err, null));
+    }
+
+    get_by_email(email, cb) {
+        this.db_connection_pool
+            .query('SELECT id, username, password, email, to_char(date_created, \'YYYY-MM-DD"T"HH24:MI:SS.MSZ\') AS date_created, viewport_top, viewport_right, viewport_bottom, viewport_left FROM users WHERE email=$1', [email])
+            .then((res) => {
+                if (res.rows.length == 0) {
+                    return cb(null, null);
+                }
+                return cb(null, db_user_to_user(res.rows[0]));
             })
             .catch(err => cb(err, null));
     }
