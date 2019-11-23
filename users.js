@@ -13,9 +13,12 @@ function db_user_to_user(db_user) {
     return user;
 }
 
+//TODO db creation
+
 class Users {
 
     constructor(db_connection_pool) {
+        this.MAX_USERNAME_LENGTH = 127;
         this.db_connection_pool = db_connection_pool;
     }
 
