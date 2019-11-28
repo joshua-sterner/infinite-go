@@ -125,27 +125,18 @@ class Server {
                 if (await is_email_taken(req.body.email)) {
                     return res.status(400).send('Email taken');
                 }
-            } catch {
-                return res.status(500).send('Database Error');
-            }
-
-            let encrypted_password = await bcrypt.hash(req.body.password, 10);
-
-            let new_user = {username:req.body.username, password:encrypted_password, email:req.body.email, viewport:args.default_viewport};
-            
-            users.create(new_user, (err, id) => {
-                if (err) {
-                    return res.status(500).send('Databse Error');
-                }
+                let encrypted_password = await bcrypt.hash(req.body.password, 10);
+                let new_user = {username:req.body.username, password:encrypted_password, email:req.body.email, viewport:args.default_viewport};
+                const id = await users.create(new_user);
                 new_user.id = id;
                 req.logIn(new_user, (err) => {
                     return res.redirect(302, '/');
                 });
-            });
-
+            } catch {
+                return res.status(500).send('Database Error');
+            }
         });
     }
-
 }
 
 module.exports = {'Server': Server};

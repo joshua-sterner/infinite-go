@@ -39,12 +39,14 @@ class MockUsers {
         this.users_passed_to_create = []
     }
 
-    create(user, cb) {
-        if (this._create_error) {
-            return cb(this._create_error, null);
-        }
-        this.users_passed_to_create.push(user);
-        cb(null, this.users_passed_to_create.length + 2);
+    create(user) {
+        return new Promise((resolve, reject) => {
+            if (this._create_error) {
+                return reject(this._create_error);
+            }
+            this.users_passed_to_create.push(user);
+            resolve(this.users_passed_to_create.length + 2);
+        });
     }
 
     pass_error_from_get_by_username(should_pass_error) {

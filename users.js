@@ -22,29 +22,31 @@ class Users {
         this.db_connection_pool = db_connection_pool;
     }
 
-    create(user, cb) {
-        if (!user.viewport) {
-            cb(new Error('user.viewport not provided'), null);
-        }
-        let date_created = user.date_created;
-        if (!user.date_created) {
-            date_created = (new Date()).toJSON();
-        }
-        if (user.id) {
-            this.db_connection_pool
-                .query('INSERT INTO users (id, username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [user.id, user.username, user.email, user.password, date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
-                .then((res) => {
-                    cb(null, user.id);
-                })
-                .catch(err => cb(err, null));
-        } else {
-            this.db_connection_pool
-                .query('INSERT INTO users (username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id', [user.username, user.email, user.password, date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
-                .then((res) => {
-                    return cb(null, res.rows[0].id);
-                })
-                .catch(err => cb(err, null));
-        }
+    create(user) {
+        return new Promise((resolve, reject) => {
+            if (!user.viewport) {
+                reject(new Error('user.viewport not provided'));
+            }
+            let date_created = user.date_created;
+            if (!user.date_created) {
+                date_created = (new Date()).toJSON();
+            }
+            if (user.id) {
+                this.db_connection_pool
+                    .query('INSERT INTO users (id, username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [user.id, user.username, user.email, user.password, date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
+                    .then((res) => {
+                        return resolve(user.id);
+                    })
+                    .catch(err => reject(err));
+            } else {
+                this.db_connection_pool
+                    .query('INSERT INTO users (username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id', [user.username, user.email, user.password, date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
+                    .then((res) => {
+                        return resolve(res.rows[0].id);
+                    })
+                    .catch(err => reject(err, null));
+            }
+        });
     }
 
     get_by_id(id, cb) {

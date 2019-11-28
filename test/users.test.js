@@ -1,6 +1,7 @@
 const Users = require('../users.js').Users;
 const child_process = require('child_process');
 const db = require('./test_db.js');
+const assert = require('assert');
 
 const test_user_1 = {
     'id': 1,
@@ -217,157 +218,146 @@ describe('Users', () => {
                 }
             };
         });
-        it('successfully creates user with custom id', (done) => {
-            users.create(test_user, (err, id) => {
+        it('successfully creates user with custom id', async function() {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_id(test_user.id, (err, user) => {
-                    if (users_equal(user, test_user)) {
-                        return done();
+                    if (!users_equal(user, test_user)) {
+                        return reject(new Error('Created user does not match.'));
                     }
-                    return done('Created user does not match.');
+                    resolve();
                 });
             });
-                
         });
-        it('successful creation of user with custom id passes provided id', (done) => {
-            users.create(test_user, (err, id) => {
-                if (id === test_user.id) {
-                    return done();
-                }
-                return done('unexpected id');
-            });
+        it('successful creation of user with custom id returns provided id', async function() {
+            const id = await users.create(test_user);
+            if (id !== test_user.id) {
+                throw new Error('unexpected id');
+            }
         });
-        it('err is null on successful creation of user w/ custom id', (done) => {
-            users.create(test_user, (err, id) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err is not null');
-            });
-        });
-        it('successfully creates user without supplied id', (done) => {
+        it('successfully creates user without supplied id', async function() {
             delete test_user.id;
-            users.create(test_user, (err, id) => {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_username(test_user.username, (err, user) => {
                     // ignore missing id for this comparison
                     test_user.id = user.id;
-                    if (users_equal(user, test_user)) {
-                        return done();
+                    if (!users_equal(user, test_user)) {
+                        return reject(new Error('Created user does not match.'));
                     }
-                    return done('Created user does not match.');
+                    resolve();
                 });
             });
         });
-        it('successful creation of user without supplied id passes correct id', (done) => {
+        it('successful creation of user without supplied id returns correct id', async function() {
             delete test_user.id;
-            users.create(test_user, (err, id) => {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_id(id, (err, user) => {
                     // ignore missing id for this comparison
                     test_user.id = user.id;
-                    if (users_equal(user, test_user)) {
-                        return done();
+                    if (!users_equal(user, test_user)) {
+                        return reject(new Error('Return user id does not match correct user.'));
                     }
-                    return done('Return user id does not match correct user.');
+                    resolve();
                 });
             });
         });
-        it('err is null on successful creation of user without supplied id', (done) => {
-            users.create(test_user, (err, id) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err is not null');
-            });
-        });
-        it('successful creation of user without supplied date_created', (done) => {
+        it('successful creation of user without supplied date_created', async function() {
             delete test_user.date_created;
-            users.create(test_user, (err, id) => {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_id(id, (err, user) => {
                     test_user.date_created = user.date_created;
-                    if (users_equal(user, test_user)) {
-                        return done();
+                    if (!users_equal(user, test_user)) {
+                        return reject(new Error('User not created successfully.'));
                     }
-                    return done('User not created successfully.');
+                    resolve();
                 });
             });
         });
-        it('user created without supplied date_created uses current time when id provided', (done) => {
+        it('user created without supplied date_created uses current time when id provided', async function() {
             delete test_user.date_created;
             const now = new Date();
-            users.create(test_user, (err, id) => {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_id(id, (err, user) => {
-                    if (timestamps_equal(user.date_created, now.toJSON())) {
-                        return done();
+                    if (!timestamps_equal(user.date_created, now.toJSON())) {
+                        return reject(new Error('default timestamp not current time'));
                     }
-                    return done('default timestamp not current time');
+                    resolve();
                 });
             });
         });
-        it('user created without supplied date_created uses current time when id not provided', (done) => {
+        it('user created without supplied date_created uses current time when id not provided', async function() {
             delete test_user.id;
             delete test_user.date_created;
             const now = new Date();
-            users.create(test_user, (err, id) => {
+            const id = await users.create(test_user);
+            return new Promise((resolve, reject) => {
                 users.get_by_id(id, (err, user) => {
-                    if (timestamps_equal(user.date_created, now.toJSON())) {
-                        return done();
+                    if (!timestamps_equal(user.date_created, now.toJSON())) {
+                        return reject(new Error('default timestamp not current time'));
                     }
-                    return done('default timestamp not current time');
+                    resolve();
                 });
             });
         });
-        it('passes error when provided user id is not unique', (done) => {
+        it('rejects when provided user id is not unique', async function() {
             // user with id 1 already exists in test database
             test_user.id = 1;
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.create(test_user);
             });
         });
-        describe('passes error when provided username is not unique', () => {
-            it('user has custom id', (done) => {
+        describe('rejects when provided username is not unique', () => {
+            it('user has custom id', async function() {
                 // test_user_1 already exists in db
                 test_user.username = test_user_1.username;
-                users.create(test_user, (err, id) => {
-                    expect_error_from_callback(err, done);
+                await assert.rejects(async function() {
+                    await users.create(test_user);
                 });
             });
-            it('user does not have custom id', (done) => {
+            it('user does not have custom id', async function() {
                 delete test_user.id;
                 // test_user_1 already exists in db
                 test_user.username = test_user_1.username;
-                users.create(test_user, (err, id) => {
-                    expect_error_from_callback(err, done);
+                await assert.rejects(async function() {
+                    await users.create(test_user);
                 });
             });
         });
-        describe('passes error when provided email is not unique', () => {
-            it('user has custom id', (done) => {
+        describe('rejects when provided email is not unique', () => {
+            it('user has custom id', async function() {
                 // test_user_1 already exists in db
                 test_user.email = test_user_1.email;
-                users.create(test_user, (err, id) => {
-                    expect_error_from_callback(err, done);
+                await assert.rejects(async function() {
+                    await users.create(test_user);
                 });
             });
-            it('user does not have custom id', (done) => {
+            it('user does not have custom id', async function() {
                 delete test_user.id;
                 // test_user_1 already exists in db
                 test_user.email = test_user_1.email;
-                users.create(test_user, (err, id) => {
-                    expect_error_from_callback(err, done);
+                await assert.rejects(async function() {
+                    await users.create(test_user);
                 });
             });
         });
         ['username', 'email', 'password', 'viewport',
         'viewport.top', 'viewport.right', 'viewport.left',
         'viewport.bottom'].forEach((field) => {
-            it(`passes error when ${field} not provided`, (done) => {
+            it(`rejects when ${field} not provided`, async function() {
                 eval('delete test_user.'+field);
-                users.create(test_user, (err, id) => expect_error_from_callback(err, done));
+                await assert.rejects(async function() {
+                    await users.create(test_user);
+                });
             });
         });
-        it('passes error on query error', (done) => {
+        it('rejects on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.create(test_user, (err, id) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.create(test_user);
             });
         });
     });
