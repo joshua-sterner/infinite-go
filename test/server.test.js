@@ -1,7 +1,7 @@
 const request = require('supertest');
 const Server = require('../server.js').Server;
 const bcrypt = require('bcrypt');
-
+const assert = require('assert');
 const test_user_1 = {
     'id': 1,
     'username': 'first_user',
@@ -31,8 +31,6 @@ const test_user_2 = {
     }
 }
 
-//TODO length validation
-
 class MockUsers {
     constructor() {
         this.MAX_USERNAME_LENGTH = 127;
@@ -42,13 +40,41 @@ class MockUsers {
     }
 
     create(user, cb) {
+        if (this._create_error) {
+            return cb(this._create_error, null);
+        }
         this.users_passed_to_create.push(user);
         cb(null, this.users_passed_to_create.length + 2);
     }
 
+    pass_error_from_get_by_username(should_pass_error) {
+        let error = null;
+        if (should_pass_error) {
+            error = new Error('some db error');
+        }
+        this._get_by_username_error = error;
+    }
 
+    pass_error_from_get_by_email(should_pass_error) {
+        let error = null;
+        if (should_pass_error) {
+            error = new Error('some db error');
+        }
+        this._get_by_email_error = error;
+    }
+
+    pass_error_from_create(should_pass_error) {
+        let error = null;
+        if (should_pass_error) {
+            error = new Error('some db error');
+        }
+        this._create_error = error;
+    }
 
     get_by_username(username, cb) {
+        if (this._get_by_username_error) {
+            return cb(this._get_by_username_error, null);
+        }
         if (username == 'first_user') {
             return cb(null, this.user_1);
         } else if (username == 'second_user') {
@@ -71,6 +97,9 @@ class MockUsers {
         return cb(null, null);
     }
     get_by_email(email, cb) {
+        if (this._get_by_email_error) {
+            return cb(this._get_by_email_error, null);
+        }
         if (email == this.user_1.email) {
             return cb(null, this.user_1);
         }
@@ -91,7 +120,24 @@ describe('Server', () => {
         server = new Server({users:users, session_secret:"test session secret", default_viewport:default_viewport});
     });
 
-    //TODO constructor argument validation
+    describe('Server Constructor', () => {
+        it('throws when called without users object', () => {
+            assert.throws(() => {
+                new Server({session_secret:"test session secret",
+                    default_viewport:default_viewport});
+            });
+        });
+        it('throws when called without session_secret', () => {
+            assert.throws(() => {
+                new Server({users:users, default_viewport:default_viewport});
+            });
+        });
+        it('throws when called without default_viewport', () => {
+            assert.throws(() => {
+                new Server({users:users, session_secret:"test session secret"});
+            });
+        });
+    });
 
     const make_authenticated_agent = (user, cb) => {
         const agent = request.agent(server.app);
@@ -259,7 +305,16 @@ describe('Server', () => {
                     });
                 });
         });
-        it('returns HTTP 400  when username one character too long', (done) => {
+        it('returns HTTP 302 to / when username is max length', (done) => {
+            username = 'a'.repeat(users.MAX_USERNAME_LENGTH)
+            request(server.app)
+                .post('/register')
+                .type('form')
+                .send({'username':username , 'password':'new_pw', 'email':'new@user.com'})
+                .expect(302)
+                .expect('Location', '/', done);
+        });
+        it('returns HTTP 400 when username one character too long', (done) => {
             username = 'a'.repeat(users.MAX_USERNAME_LENGTH+1)
             request(server.app)
                 .post('/register')
@@ -267,7 +322,6 @@ describe('Server', () => {
                 .send({'username':username , 'password':'new_pw', 'email':'new@user.com'})
                 .expect(400, done);
         });
-        //TODO length validation
         it('with missing username returns HTTP 400', (done) => {
             request(server.app)
                 .post('/register')
@@ -311,9 +365,31 @@ describe('Server', () => {
                 .send({'username':'new_user', 'email':'new@user.com'})
                 .expect(400, done);
         });
-        //TODO db error in get_by_username
-        //TODO db error in get_by_email
-        //TODO db error in create
+        it('returns http 500 on error from get_by_username', (done) => {
+            users.pass_error_from_get_by_username(true);
+            request(server.app)
+                .post('/register')
+                .type('form')
+                .send({'username':'new_user', 'email':'new@user.com', 'password':'new_pw'})
+                .expect(500, done);
+        });
+        it('returns http 500 on error from get_by_email', (done) => {
+            users.pass_error_from_get_by_email(true);
+            request(server.app)
+                .post('/register')
+                .type('form')
+                .send({'username':'new_user', 'email':'new@user.com', 'password':'new_pw'})
+                .expect(500, done);
+        });
+        it('returns http 500 on error from users.create', (done) => {
+            users.pass_error_from_create(true);
+            request(server.app)
+                .post('/register')
+                .type('form')
+                .send({'username':'new_user', 'email':'new@user.com', 'password':'new_pw'})
+                .expect(500, done);
+        });
+        //TODO captcha?
     });
 
     describe('GET /logout', () => {

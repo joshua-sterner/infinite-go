@@ -8,6 +8,11 @@ const bcrypt = require('bcrypt');
 class Server {
 
     constructor(args) {
+
+        if (!args.users || !args.session_secret || !args.default_viewport) {
+            throw new Error('invalid call to constructor');
+        }
+
         const app = express();
         this.app = app;
         const passport = new Passport();
@@ -17,9 +22,6 @@ class Server {
             users.get_by_username(username, (err, user) => {
                 if (user) {
                     bcrypt.compare(password, user.password, (err, res) => {
-                        console.log(password);
-                        console.log(user.password);
-                        console.log(res);
                         if (res) {
                             return done(null, user);
                         }
@@ -72,13 +74,22 @@ class Server {
         });
         app.post('/register', (req, res, next) => {
             if (!req.body.username || !req.body.email || !req.body.password) {
-                return res.status(400).send('username required');
+                return res.status(400).send('Username, password and email are required.');
+            }
+            if (req.body.username.length > users.MAX_USERNAME_LENGTH) {
+                return res.status(400).send(`Username exceeds character limit of ${users.MAX_USERNAME_LENGTH}.`);
             }
             users.get_by_username(req.body.username, (err, user) => {
+                if (err) {
+                    return res.status(500).send('Database Error');
+                }
                 if (user) {
                     return res.status(400).send('Username taken');
                 }
                 users.get_by_email(req.body.email, (err, user) => {
+                    if (err) {
+                        return res.status(500).send('Database Error');
+                    }
                     if (user) {
                         return res.status(400).send(`User with email ${user.email} already exists`);
                     }
@@ -89,6 +100,9 @@ class Server {
                         new_user.email = req.body.email;
                         new_user.viewport = args.default_viewport;
                         users.create(new_user, (err, id) => {
+                            if (err) {
+                                return res.status(500).send('Database Error');
+                            }
                             new_user.id = id;
                             req.logIn(new_user, (err) => {
                                 return res.redirect(302, '/');
