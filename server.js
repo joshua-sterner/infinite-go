@@ -5,6 +5,45 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
+
+function setup_passport(users) {
+    passport = new Passport();
+
+    passport.use(new LocalStrategy((username, password, done) => {
+        users.get_by_username(username, (err, user) => {
+            if (user) {
+                bcrypt.compare(password, user.password, (err, res) => {
+                    if (res) {
+                        return done(null, user);
+                    }
+                    return done(new Error("Invalid password"), null);
+                });
+            } else {
+                done(err, user);
+            }
+        });
+    }));
+
+    passport.serializeUser((user, done) => {
+        done(null, user.id);
+    });
+
+    passport.deserializeUser((id, done) => {
+        users.get_by_id(id, done);
+    });
+
+    return passport;
+}
+
+function setup_express(passport, session_secret) {
+    let app = express();
+    app.use(bodyParser.urlencoded({extended: false}));
+    app.use(session({secret: session_secret, resave: false, saveUninitialized: false}));
+    app.use(passport.initialize());
+    app.use(passport.session());
+    return app;
+}
+
 class Server {
 
     constructor(args) {
@@ -13,38 +52,12 @@ class Server {
             throw new Error('invalid call to constructor');
         }
 
-        const app = express();
-        this.app = app;
-        const passport = new Passport();
         const users = args.users;
+        const passport = setup_passport(users);
 
-        passport.use(new LocalStrategy((username, password, done) => {
-            users.get_by_username(username, (err, user) => {
-                if (user) {
-                    bcrypt.compare(password, user.password, (err, res) => {
-                        if (res) {
-                            return done(null, user);
-                        }
-                        return done(new Error("Invalid password"), null);
-                    });
-                } else {
-                    done(err, user);
-                }
-            });
-        }));
+        const app = setup_express(passport, args.session_secret);
+        this.app = app;
 
-        passport.serializeUser((user, done) => {
-            done(null, user.id);
-        });
-
-        passport.deserializeUser((id, done) => {
-            users.get_by_id(id, done);
-        });
-
-        app.use(bodyParser.urlencoded({extended: false}));
-        app.use(session({secret: args.session_secret, resave: false, saveUninitialized: false}));
-        app.use(passport.initialize());
-        app.use(passport.session());
         app.get('/', (req, res) => {
             if (req.isAuthenticated()) {
                 return res.status(200).send('/');
@@ -72,45 +85,64 @@ class Server {
         app.get('/register', (req, res, next) => {
             res.status(200).send('registration page');
         });
-        app.post('/register', (req, res, next) => {
+
+
+        async function is_username_taken(username) {
+            return new Promise((resolve, reject) => {
+                users.get_by_username(username, (err, user) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(Boolean(user));
+                });
+            });
+        }
+
+        async function is_email_taken(email) {
+            return new Promise((resolve, reject) => {
+                users.get_by_email(email, (err, user) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    return resolve(Boolean(user));
+                });
+            });
+        }
+
+        app.post('/register', async function (req, res, next) {
             if (!req.body.username || !req.body.email || !req.body.password) {
                 return res.status(400).send('Username, password and email are required.');
             }
             if (req.body.username.length > users.MAX_USERNAME_LENGTH) {
                 return res.status(400).send(`Username exceeds character limit of ${users.MAX_USERNAME_LENGTH}.`);
             }
-            users.get_by_username(req.body.username, (err, user) => {
-                if (err) {
-                    return res.status(500).send('Database Error');
-                }
-                if (user) {
+            
+            try {
+                if (await is_username_taken(req.body.username)) {
                     return res.status(400).send('Username taken');
                 }
-                users.get_by_email(req.body.email, (err, user) => {
-                    if (err) {
-                        return res.status(500).send('Database Error');
-                    }
-                    if (user) {
-                        return res.status(400).send(`User with email ${user.email} already exists`);
-                    }
-                    let new_user = {};
-                    new_user.username = req.body.username;
-                    bcrypt.hash(req.body.password, 10, (err, hash) => {
-                        new_user.password = hash;
-                        new_user.email = req.body.email;
-                        new_user.viewport = args.default_viewport;
-                        users.create(new_user, (err, id) => {
-                            if (err) {
-                                return res.status(500).send('Database Error');
-                            }
-                            new_user.id = id;
-                            req.logIn(new_user, (err) => {
-                                return res.redirect(302, '/');
-                            });
-                        });
-                    });
+
+                if (await is_email_taken(req.body.email)) {
+                    return res.status(400).send('Email taken');
+                }
+            } catch {
+                return res.status(500).send('Database Error');
+            }
+
+            let encrypted_password = await bcrypt.hash(req.body.password, 10);
+
+            let new_user = {username:req.body.username, password:encrypted_password, email:req.body.email, viewport:args.default_viewport};
+            
+            users.create(new_user, (err, id) => {
+                if (err) {
+                    return res.status(500).send('Databse Error');
+                }
+                new_user.id = id;
+                req.logIn(new_user, (err) => {
+                    return res.redirect(302, '/');
                 });
             });
+
         });
     }
 
