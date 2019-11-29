@@ -73,16 +73,18 @@ class MockUsers {
         this._create_error = error;
     }
 
-    get_by_username(username, cb) {
-        if (this._get_by_username_error) {
-            return cb(this._get_by_username_error, null);
-        }
-        if (username == 'first_user') {
-            return cb(null, this.user_1);
-        } else if (username == 'second_user') {
-            return cb(null, this.user_2);
-        }
-        return cb(null, null);
+    get_by_username(username) {
+        return new Promise((resolve, reject) => {
+            if (this._get_by_username_error) {
+                return reject(this._get_by_username_error);
+            }
+            if (username == 'first_user') {
+                return resolve(this.user_1);
+            } else if (username == 'second_user') {
+                return resolve(this.user_2);
+            }
+            return resolve(null);
+        });
     }
 
     get_by_id(id) {

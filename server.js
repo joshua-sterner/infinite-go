@@ -10,18 +10,18 @@ function setup_passport(users) {
     passport = new Passport();
 
     passport.use(new LocalStrategy((username, password, done) => {
-        users.get_by_username(username, (err, user) => {
-            if (user) {
+        users.get_by_username(username)
+            .then((user) => {
+                if (!user) {
+                    return done(null, null);
+                }
                 bcrypt.compare(password, user.password, (err, res) => {
                     if (res) {
                         return done(null, user);
                     }
                     return done(new Error("Invalid password"), null);
                 });
-            } else {
-                done(err, user);
-            }
-        });
+            }).catch(err => done(err, null));
     }));
 
     passport.serializeUser((user, done) => {
@@ -90,14 +90,8 @@ class Server {
 
 
         async function is_username_taken(username) {
-            return new Promise((resolve, reject) => {
-                users.get_by_username(username, (err, user) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    return resolve(Boolean(user));
-                });
-            });
+            const user = await users.get_by_username(username);
+            return (user !== null);
         }
 
         async function is_email_taken(email) {

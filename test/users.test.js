@@ -73,11 +73,11 @@ describe('Users', () => {
     describe('#get_by_id', () => {
         it('Should retrieve pre-created user with id 1', async function() {
             const user = await users.get_by_id(1);
-            await assert(users_equal(user, test_user_1));
+            assert(users_equal(user, test_user_1));
         });
         it('Should retrieve pre-created user with id 2', async function() {
             const user = await users.get_by_id(2);
-            await assert(users_equal(user, test_user_2));
+            assert(users_equal(user, test_user_2));
         });
         it('Should resolve to null on non-existent id', async function() {
             const user = await users.get_by_id(123);
@@ -91,43 +91,18 @@ describe('Users', () => {
         });
     });
     describe('#get_by_username', () => {
-        it('Should retrieve pre-created user with username first_test_user', (done) => {
-            users.get_by_username('first_test_user', (err, user) => {
-                if (!users_equal(user, test_user_1)) {
-                    return done('Didn\'t retrieve expected user.');
-                }
-                return done();
-            });
+        it('Should retrieve pre-created user with username first_test_user', async function() {
+            const user = await users.get_by_username(test_user_1.username);
+            assert(users_equal(user, test_user_1));
         });
-        it('Should pass null to error parameter on successful retrieval', (done) => {
-            users.get_by_username('first_test_user', (err, user) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err was not null.');
-            });
+        it('Should resolve to null on non-existent user', async function() {
+            const user = await users.get_by_username('nonexistent');
+            assert(user === null);
         });
-        it('Should pass null error and user on non-existent user', (done) => {
-            users.get_by_username('nonexistent', (err, user) => {
-                if (err === null && user === null) {
-                    return done();
-                }
-                return done('err and user must be null.');
-            });
-        });
-        it('Should pass error on query error', (done) => {
+        it('Should reject on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.get_by_username('first_test_user', (err, user) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('Should pass null to user parameter on query error', (done) => {
-            let users = new Users(db.mock_throwing_pool);
-            users.get_by_username(test_user_1.username, (err, user) => {
-                if (user === null) {
-                    return done();
-                }
-                return done('user must be null.');
+            await assert.rejects(async function() {
+                await users.get_by_username(test_user_1.username);
             });
         });
     });
@@ -203,16 +178,9 @@ describe('Users', () => {
         it('successfully creates user without supplied id', async function() {
             delete test_user.id;
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_username(test_user.username, (err, user) => {
-                    // ignore missing id for this comparison
-                    test_user.id = user.id;
-                    if (!users_equal(user, test_user)) {
-                        return reject(new Error('Created user does not match.'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_username(test_user.username);
+            test_user.id = user.id;
+            assert(users_equal(user, test_user));
         });
         it('successful creation of user without supplied id returns correct id', async function() {
             delete test_user.id;
@@ -393,12 +361,13 @@ describe('Users', () => {
     describe('#delete_by_username', () => {
         it('successfully deletes user from db', (done) => {
             users.delete_by_username(test_user_1.username, (err) => {
-                users.get_by_username(test_user_1.username, (err, user) => {
-                    if (user === null) {
-                        return done();
-                    }
-                    return done('user not removed from db.');
-                });
+                users.get_by_username(test_user_1.username)
+                    .then((user) => {
+                        if (user === null) {
+                            return done();
+                        }
+                        return done('user not removed from db.');
+                    });
             });
         });
         it('err is null on successful deletion of user', (done) => {
