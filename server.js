@@ -29,7 +29,9 @@ function setup_passport(users) {
     });
 
     passport.deserializeUser((id, done) => {
-        users.get_by_id(id, done);
+        users.get_by_id(id)
+            .then(user => done(null, user))
+            .catch(err => done(err, null));
     });
 
     return passport;

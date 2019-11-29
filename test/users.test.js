@@ -71,51 +71,22 @@ describe('Users', () => {
     });
 
     describe('#get_by_id', () => {
-        it('Should retrieve pre-created user with id 1', (done) => {
-            users.get_by_id(1, (err, user) => {
-                if (users_equal(user, test_user_1)) {
-                    return done();
-                }
-                return done('Didn\'t retrieve expected user.');
-            });
+        it('Should retrieve pre-created user with id 1', async function() {
+            const user = await users.get_by_id(1);
+            await assert(users_equal(user, test_user_1));
         });
-        it('Should retrieve pre-created user with id 2', (done) => {
-            users.get_by_id(2, (err, user) => {
-                if (!users_equal(user, test_user_2)) {
-                    return done('Didn\'t retrieve expected user.');
-                }
-                return done();
-            });
+        it('Should retrieve pre-created user with id 2', async function() {
+            const user = await users.get_by_id(2);
+            await assert(users_equal(user, test_user_2));
         });
-        it('Should pass null to error parameter on successful retrieval', (done) => {
-            users.get_by_id(1, (err, user) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err was not null');
-            });
+        it('Should resolve to null on non-existent id', async function() {
+            const user = await users.get_by_id(123);
+            assert(user === null);
         });
-        it('Should pass null error and user on non-existent id', (done) => {
-            users.get_by_id(123, (err, user) => {
-                if (err === null && user === null) {
-                    return done();
-                }
-                return done('err && user must be null');
-            });
-        });
-        it('Should pass error on query error', (done) => {
+        it('Should reject on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.get_by_id(1, (err, user) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('Should pass null to user parameter on query error', (done) => {
-            let users = new Users(db.mock_throwing_pool);
-            users.get_by_id(test_user_1.id, (err, user) => {
-                if (user === null) {
-                    return done();
-                }
-                return done('user must be null.');
+            await assert.rejects(async function() {
+                await users.get_by_id(1);
             });
         });
     });
@@ -220,14 +191,8 @@ describe('Users', () => {
         });
         it('successfully creates user with custom id', async function() {
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_id(test_user.id, (err, user) => {
-                    if (!users_equal(user, test_user)) {
-                        return reject(new Error('Created user does not match.'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_id(test_user.id);
+            assert(users_equal(user, test_user));
         });
         it('successful creation of user with custom id returns provided id', async function() {
             const id = await users.create(test_user);
@@ -252,56 +217,31 @@ describe('Users', () => {
         it('successful creation of user without supplied id returns correct id', async function() {
             delete test_user.id;
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_id(id, (err, user) => {
-                    // ignore missing id for this comparison
-                    test_user.id = user.id;
-                    if (!users_equal(user, test_user)) {
-                        return reject(new Error('Return user id does not match correct user.'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_id(id);
+            test_user.id = user.id;
+            assert(users_equal(user, test_user));
         });
         it('successful creation of user without supplied date_created', async function() {
             delete test_user.date_created;
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_id(id, (err, user) => {
-                    test_user.date_created = user.date_created;
-                    if (!users_equal(user, test_user)) {
-                        return reject(new Error('User not created successfully.'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_id(id);
+            test_user.date_created = user.date_created;
+            assert(users_equal(user, test_user));
         });
         it('user created without supplied date_created uses current time when id provided', async function() {
             delete test_user.date_created;
             const now = new Date();
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_id(id, (err, user) => {
-                    if (!timestamps_equal(user.date_created, now.toJSON())) {
-                        return reject(new Error('default timestamp not current time'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_id(id);
+            assert(timestamps_equal(user.date_created, now.toJSON()));
         });
         it('user created without supplied date_created uses current time when id not provided', async function() {
             delete test_user.id;
             delete test_user.date_created;
             const now = new Date();
             const id = await users.create(test_user);
-            return new Promise((resolve, reject) => {
-                users.get_by_id(id, (err, user) => {
-                    if (!timestamps_equal(user.date_created, now.toJSON())) {
-                        return reject(new Error('default timestamp not current time'));
-                    }
-                    resolve();
-                });
-            });
+            const user = await users.get_by_id(id);
+            assert(timestamps_equal(user.date_created, now.toJSON()));
         });
         it('rejects when provided user id is not unique', async function() {
             // user with id 1 already exists in test database
@@ -381,7 +321,7 @@ describe('Users', () => {
         });
         it('successfully updates user when date_created is provided', (done) => {
             users.update(test_user, (err) => {
-                users.get_by_id(1, (err, user) => {
+                users.get_by_id(1).then((user) => {
                     if (users_equal(test_user, user)) {
                         return done();
                     }
@@ -422,7 +362,7 @@ describe('Users', () => {
     describe('#delete_by_id', () => {
         it('successfully deletes user from db', (done) => {
             users.delete_by_id(1, (err) => {
-                users.get_by_id(1, (err, user) => {
+                users.get_by_id(1).then((user) => {
                     if (user === null) {
                         return done();
                     }

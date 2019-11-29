@@ -85,18 +85,20 @@ class MockUsers {
         return cb(null, null);
     }
 
-    get_by_id(id, cb) {
-        if (id == 1) {
-            return cb(null, this.user_1);
-        }
-        if (id == 2) {
-            return cb(null, this.user_2);
-        }
-        let user = this.users_passed_to_create[0];
-        if (user && id == user.id) {
-            return cb(null, user);
-        }
-        return cb(null, null);
+    get_by_id(id) {
+        return new Promise((resolve, reject) => {
+            if (id == 1) {
+                return resolve(this.user_1);
+            }
+            if (id == 2) {
+                return resolve(this.user_2);
+            }
+            let user = this.users_passed_to_create[0];
+            if (user && id == user.id) {
+                return resolve(user);
+            }
+            return resolve(null);
+        });
     }
     get_by_email(email, cb) {
         if (this._get_by_email_error) {
