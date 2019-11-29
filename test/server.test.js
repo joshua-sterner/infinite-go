@@ -102,17 +102,19 @@ class MockUsers {
             return resolve(null);
         });
     }
-    get_by_email(email, cb) {
-        if (this._get_by_email_error) {
-            return cb(this._get_by_email_error, null);
-        }
-        if (email == this.user_1.email) {
-            return cb(null, this.user_1);
-        }
-        if (email == this.user_2.email) {
-            return cb(null, this.user_2);
-        }
-        return cb(null, null);
+    get_by_email(email) {
+        return new Promise((resolve, reject) => {
+            if (this._get_by_email_error) {
+                return reject(this._get_by_email_error);
+            }
+            if (email == this.user_1.email) {
+                return resolve(this.user_1);
+            }
+            if (email == this.user_2.email) {
+                return resolve(this.user_2);
+            }
+            return resolve(null);
+        });
     }
 }
 

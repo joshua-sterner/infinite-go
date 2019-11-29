@@ -95,14 +95,8 @@ class Server {
         }
 
         async function is_email_taken(email) {
-            return new Promise((resolve, reject) => {
-                users.get_by_email(email, (err, user) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    return resolve(Boolean(user));
-                });
-            });
+            const user = await users.get_by_email(email);
+            return (user !== null);
         }
 
         app.post('/register', async function (req, res, next) {

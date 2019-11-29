@@ -77,55 +77,63 @@ class Users {
         });
     }
 
-    get_by_email(email, cb) {
-        this.db_connection_pool
-            .query('SELECT id, username, password, email, to_char(date_created, \'YYYY-MM-DD"T"HH24:MI:SS.MSZ\') AS date_created, viewport_top, viewport_right, viewport_bottom, viewport_left FROM users WHERE email=$1', [email])
-            .then((res) => {
-                if (res.rows.length == 0) {
-                    return cb(null, null);
-                }
-                return cb(null, db_user_to_user(res.rows[0]));
-            })
-            .catch(err => cb(err, null));
+    get_by_email(email) {
+        return new Promise((resolve, reject) => {
+            this.db_connection_pool
+                .query('SELECT id, username, password, email, to_char(date_created, \'YYYY-MM-DD"T"HH24:MI:SS.MSZ\') AS date_created, viewport_top, viewport_right, viewport_bottom, viewport_left FROM users WHERE email=$1', [email])
+                .then((res) => {
+                    if (res.rows.length == 0) {
+                        return resolve(null);
+                    }
+                    return resolve(db_user_to_user(res.rows[0]));
+                })
+                .catch(err => reject(err));
+        });
     }
 
-    update(user, cb) {
-        if (!user.viewport) {
-            cb(new Error('user.viewport not provided'), null);
-        }
-        this.db_connection_pool
-            .query('UPDATE users SET username=$2, email=$3, password=$4, date_created=$5, viewport_top=$6, viewport_right=$7, viewport_bottom=$8, viewport_left=$9 WHERE id=$1', [user.id, user.username, user.email, user.password, user.date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
-            .then((res) => {
-                if (res.rowCount == 1) {
-                    return cb(null);
-                }
-                return cb(new Error('Failed to update user'));
-            })
-            .catch(err => cb(err));
+    update(user) {
+        return new Promise((resolve, reject) => {
+            if (!user.viewport) {
+                return reject(new Error('user.viewport not provided'));
+            }
+            this.db_connection_pool
+                .query('UPDATE users SET username=$2, email=$3, password=$4, date_created=$5, viewport_top=$6, viewport_right=$7, viewport_bottom=$8, viewport_left=$9 WHERE id=$1', [user.id, user.username, user.email, user.password, user.date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
+                .then((res) => {
+                    if (res.rowCount == 1) {
+                        return resolve();
+                    }
+                    return reject(new Error('Failed to update user'));
+                })
+                .catch(err => reject(err));
+        });
     }
 
-    delete_by_id(id, cb) {
-        this.db_connection_pool
-            .query('DELETE FROM users WHERE id=$1', [id])
-            .then((res) => {
-                if (res.rowCount == 1) {
-                    return cb(null);
-                }
-                return cb(new Error('Failed to delete user'));
-            })
-            .catch(err => cb(err));
+    delete_by_id(id) {
+        return new Promise((resolve, reject) => {
+            this.db_connection_pool
+                .query('DELETE FROM users WHERE id=$1', [id])
+                .then((res) => {
+                    if (res.rowCount == 1) {
+                        return resolve();
+                    }
+                    return reject(new Error('Failed to delete user'));
+                })
+                .catch(err => reject(err));
+        });
     }
 
-    delete_by_username(username, cb) {
-        this.db_connection_pool
-            .query('DELETE FROM users WHERE username=$1', [username])
-            .then((res) => {
-                if (res.rowCount == 1) {
-                    return cb(null);
-                }
-                return cb(new Error('Failed to delete user.'));
-            })
-            .catch(err => cb(err));
+    delete_by_username(username) {
+        return new Promise((resolve, reject) => {
+            this.db_connection_pool
+                .query('DELETE FROM users WHERE username=$1', [username])
+                .then((res) => {
+                    if (res.rowCount == 1) {
+                        return resolve();
+                    }
+                    return reject(new Error('Failed to delete user.'));
+                })
+                .catch(err => reject(err));
+        });
     }
 
 }

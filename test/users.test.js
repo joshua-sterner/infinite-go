@@ -6,7 +6,7 @@ const assert = require('assert');
 const test_user_1 = {
     'id': 1,
     'username': 'first_test_user',
-    'email': 'nobody@nonexistant.tld',
+    'email': 'nobody@nonexistent.tld',
     'password': 'pw1',
     'date_created': '2019-11-13T15:13:12.345Z',
     'viewport': {
@@ -107,43 +107,18 @@ describe('Users', () => {
         });
     });
     describe('#get_by_email', () => {
-        it('Should retrieve pre-created user', (done) => {
-            users.get_by_email(test_user_1.email, (err, user) => {
-                if (!users_equal(user, test_user_1)) {
-                    return done('Didn\'t retrieve expected user.');
-                }
-                return done();
-            });
+        it('Should retrieve pre-created user', async function() {
+            const user = await users.get_by_email(test_user_1.email);
+            assert(users_equal(user, test_user_1));
         });
-        it('Should pass null to error parameter on successful retrieval', (done) => {
-            users.get_by_email(test_user_1.email, (err, user) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err must be null.');
-            });
+        it('Should resolve to null on non-existent user', async function() {
+            const user = await users.get_by_email('nonexistent');
+            assert(user === null);
         });
-        it('Should pass null error and user on non-existent user', (done) => {
-            users.get_by_email('nonexistent', (err, user) => {
-                if (err === null && user === null) {
-                    return done();
-                }
-                return done('err and user must be null.');
-            });
-        });
-        it('Should pass error on query error', (done) => {
+        it('Should reject on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.get_by_email(test_user_1.email, (err, user) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('Should pass null to user parameter on query error', (done) => {
-            let users = new Users(db.mock_throwing_pool);
-            users.get_by_email(test_user_1.email, (err, user) => {
-                if (user === null) {
-                    return done();
-                }
-                return done('user must be null.');
+            await assert.rejects(async function() {
+                await users.get_by_email(test_user_1.email);
             });
         });
     });
@@ -287,106 +262,68 @@ describe('Users', () => {
                 }
             };
         });
-        it('successfully updates user when date_created is provided', (done) => {
-            users.update(test_user, (err) => {
-                users.get_by_id(1).then((user) => {
-                    if (users_equal(test_user, user)) {
-                        return done();
-                    }
-                    return done('Failed to update user in db');
-                });
-            });
-        });
-        it('err null on successful update of user', (done) => {
-            users.update(test_user, (err) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err is not null');
-            });
+        it('successfully updates user when date_created is provided', async function() {
+            await users.update(test_user);
+            const user = await users.get_by_id(test_user.id);
+            assert(users_equal(test_user, user));
         });
         ['id', 'username', 'email', 'password', 'date_created', 'viewport',
         'viewport.top', 'viewport.right', 'viewport.left',
         'viewport.bottom'].forEach((field) => {
-            it(`passes error when ${field} not provided`, (done) => {
+            it(`rejects when ${field} not provided`,  async function() {
                 eval('delete test_user.'+field);
-                users.update(test_user, err => expect_error_from_callback(err, done));
+                await assert.rejects(async function() {
+                    await users.update(test_user);
+                });
             });
         });
 
-        it('passes error when user doesn\'t exist in db', (done) => {
+        it('rejects when user doesn\'t exist in db', async function() {
             test_user.id = 123;
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.update(test_user);
             });
         });
-        it('passes error on query error', (done) => {
+        it('rejects on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.update(test_user, (err) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.update(test_user);
             });
         });
     });
     describe('#delete_by_id', () => {
-        it('successfully deletes user from db', (done) => {
-            users.delete_by_id(1, (err) => {
-                users.get_by_id(1).then((user) => {
-                    if (user === null) {
-                        return done();
-                    }
-                    return done('user not removed from db');
-                });
+        it('successfully deletes user from db', async function() {
+            await users.delete_by_id(test_user_1.id);
+            const user = await users.get_by_id(test_user_1.id);
+            assert(user === null);
+        });
+        it('rejects on invalid id', async function() {
+            await assert.rejects(async function() {
+                await users.delete_by_id(123);
             });
         });
-        it('err is null on successful deletion of user', (done) => {
-            users.delete_by_id(1, (err) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err is not null');
-            });
-        });
-        it('passes error on invalid id', (done) => {
-            users.delete_by_id(123, (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error on query error', (done) => {
+        it('rejects on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.delete_by_id(1, (err) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.delete_by_id(test_user_1.id);
             });
         });
     });
     describe('#delete_by_username', () => {
-        it('successfully deletes user from db', (done) => {
-            users.delete_by_username(test_user_1.username, (err) => {
-                users.get_by_username(test_user_1.username)
-                    .then((user) => {
-                        if (user === null) {
-                            return done();
-                        }
-                        return done('user not removed from db.');
-                    });
+        it('successfully deletes user from db', async function() {
+            await users.delete_by_username(test_user_1.username);
+            const user = await users.get_by_username(test_user_1.username);
+            assert(user === null);
+        });
+        it('rejects on invalid username', async function() {
+            await assert.rejects(async function() {
+                await users.delete_by_username('non_existent_username');
             });
         });
-        it('err is null on successful deletion of user', (done) => {
-            users.delete_by_username(test_user_1.username, (err) => {
-                if (err === null) {
-                    return done();
-                }
-                return done('err is not null');
-            });
-        });
-        it('passes error on invalid username', (done) => {
-            users.delete_by_username('non_existant_username', (err) => {
-                expect_error_from_callback(err, done);
-            });
-        });
-        it('passes error on query error', (done) => {
+        it('rejects on query error', async function() {
             let users = new Users(db.mock_throwing_pool);
-            users.delete_by_username(test_user_1.username, (err) => {
-                expect_error_from_callback(err, done);
+            await assert.rejects(async function() {
+                await users.delete_by_username(test_user_1.username);
             });
         });
     });
