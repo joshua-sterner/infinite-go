@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Infinite Go</title>
+        <link rel="stylesheet" href="login_style.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <img class="logo" src="infinite_go_logo.png">
+        <h2>infinitego.net</h2>
+        <form action="/login" method="post">
+            <p class="error-message <% if (!authentication_failed) { %> hidden <% } %>">Invalid username or password.</p>
+            <label>Username:</label>
+            <input type="text" name="username"/>
+            <label>Password:</label>
+            <input type="password" name="password"/>
+            <input type="submit" value="Join Game"/>
+            <a href="/register">Register</a>
+        </form>
+    </body>
+</html>

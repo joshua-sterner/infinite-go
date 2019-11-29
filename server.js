@@ -60,6 +60,11 @@ class Server {
         const app = setup_express(passport, args.session_secret);
         this.app = app;
 
+        //TODO enable/disable switch for static file serving
+        app.use(express.static('static'));
+
+        app.set('view engine', 'ejs');
+
         app.get('/', (req, res) => {
             if (req.isAuthenticated()) {
                 return res.status(200).send('/');
@@ -68,12 +73,13 @@ class Server {
             }
         });
         app.get('/login', (req, res) => {
-            res.status(200).send('login page');
+            res.status(200).render('login', {authentication_failed: false});
         });
         app.post('/login', (req, res, next) => {
             passport.authenticate('local', (err, user, info) => {
+                //TODO 500 if server error in authentication attempt
                 if (err || !user) {
-                    return res.status(403).send('login page');
+                    return res.status(403).render('login', { authentication_failed: true});
                 }
                 req.logIn(user, (err) => {
                     return res.redirect(302, '/');
@@ -85,7 +91,7 @@ class Server {
             return res.redirect(302, '/login');
         });
         app.get('/register', (req, res, next) => {
-            res.status(200).send('registration page');
+            res.status(200).render('registration');
         });
 
 
