@@ -67,7 +67,7 @@ class Server {
 
         app.get('/', (req, res) => {
             if (req.isAuthenticated()) {
-                return res.status(200).send('/');
+                return res.status(200).render('game');
             } else {
                 return res.redirect(302, '/login');
             }

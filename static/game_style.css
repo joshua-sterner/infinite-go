@@ -1,0 +1,43 @@
+body {
+    display: grid;
+    grid-template-columns: auto 12em;
+    grid-template-rows: 100vh;
+    height: 100%;
+    margin: 0px;
+    font-family: sans;
+}
+
+#goban {
+    background-color: #969696;
+    width: 100%;
+    height: 100%;
+}
+
+.panel {
+    display: grid;
+    grid-template-rows: auto 4em;
+    background-color: #f0f0f0;
+    text-align: center;
+}
+
+.logo-panel h2 {
+    font-size: 1.3em;
+    margin: 0em;
+}
+
+.logo-panel hr {
+    margin: 1em;
+}
+
+.panel a {
+    grid-row-start: 2;
+    grid-row-end: 3;
+    color: #007fc8;
+}
+
+.logo {
+    width: 10em;
+    height: 10em;
+    margin: 1em;
+    margin-bottom: 0em;
+}
