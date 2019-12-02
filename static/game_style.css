@@ -1,6 +1,6 @@
 body {
     display: grid;
-    grid-template-columns: auto 12em;
+    grid-template-columns: 1fr auto;
     grid-template-rows: 100vh;
     height: 100%;
     margin: 0px;
@@ -11,13 +11,18 @@ body {
     background-color: #969696;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    grid-column-start: 1;
+    grid-column-end: 3;
+    grid-row: 1;
 }
 
 .panel {
     display: grid;
-    grid-template-rows: auto 4em;
     background-color: #f0f0f0;
     text-align: center;
+    max-width: 12em;
+    display: none;
 }
 
 .logo-panel h2 {
@@ -30,9 +35,12 @@ body {
 }
 
 .panel a {
-    grid-row-start: 2;
-    grid-row-end: 3;
     color: #007fc8;
+    text-decoration: none;
+    text-align: right;
+    margin-right: 1em;
+    margin-bottom: 1em;
+    margin-top: auto;
 }
 
 .logo {
@@ -40,4 +48,19 @@ body {
     height: 10em;
     margin: 1em;
     margin-bottom: 0em;
+}
+
+#panel-icon {
+    grid-column-start: 2;
+    grid-column-end: 3;
+    grid-row-start: 1;
+}
+
+#panel-icon img {
+    height: 3em;
+    width: 3em;
+    margin: 0.5em;
+    padding: 0.25em;
+    border-radius: 0.5em;
+    background-color: rgba(255,255,255,0.75);
 }

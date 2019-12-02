@@ -8,6 +8,7 @@ class Goban {
         this.panning = false;
         this.panning_from = {x:0, y:0};
         this.panning_touch_id = null;
+        this.stones = [];
         canvas.addEventListener('mousedown', (e) => {
             this.panning = true;
             this.panning_from.x = e.clientX;
@@ -97,10 +98,34 @@ class Goban {
         }
     }
 
-    
+    draw_stone(color, pos) {
+        const x = pos.x * this.grid_width + this.offset.x;
+        const y = pos.y * (this.grid_width/this.grid_ratio) + this.offset.y;
+        this.ctx.beginPath();
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = 'black';
+        this.ctx.fillStyle = color;
+        //TODO stone width
+        this.ctx.arc(x, y, this.grid_width*0.5-3, 0, 2*Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+    }
+
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.draw_grid();
+        this.stones.forEach((stone) => {
+            this.draw_stone(stone.color, stone.position);
+        });
+        this.draw_stone('white', {x:2, y:3});
+        this.draw_stone('black', {x:5, y:7});
+        this.draw_stone('black', {x:6, y:6});
+        this.draw_stone('black', {x:6, y:8});
+        this.draw_stone('white', {x:6, y:7});
+        this.draw_stone('white', {x:7, y:8});
+        this.draw_stone('white', {x:7, y:6});
+        this.draw_stone('white', {x:8, y:7});
+
     }
 
     resize() {
