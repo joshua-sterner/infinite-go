@@ -17,12 +17,20 @@ body {
     grid-row: 1;
 }
 
-.panel {
+#panel {
     display: grid;
     background-color: #f0f0f0;
     text-align: center;
     max-width: 12em;
     display: none;
+    grid-row: 1;
+    grid-template-columns: 1fr auto;
+}
+
+.logo-panel {
+    grid-row: 1;
+    grid-column-start: 1;
+    grid-column-end: 3;
 }
 
 .logo-panel h2 {
@@ -32,15 +40,27 @@ body {
 
 .logo-panel hr {
     margin: 1em;
+    grid-row: 1;
 }
 
-.panel a {
+#panel .close-icon {
+    grid-row:1;
+    grid-column-start: 2;
+    grid-column-end: 3;
+    margin: 0.5em;
+    width: 1em;
+    height: 1em;
+}
+
+#panel .sign-out {
     color: #007fc8;
     text-decoration: none;
     text-align: right;
     margin-right: 1em;
     margin-bottom: 1em;
     margin-top: auto;
+    grid-column-start: 1;
+    grid-column-end: 3;
 }
 
 .logo {
@@ -54,13 +74,30 @@ body {
     grid-column-start: 2;
     grid-column-end: 3;
     grid-row-start: 1;
+    background-color: rgba(255,255,255,0.75);
+    border-radius: 0.5em;
+    width: 3.75em;
+    height: 5.08em;
+    margin: 0.5em;
 }
 
 #panel-icon img {
-    height: 3em;
-    width: 3em;
+    height: 2.75em;
+    width: 2.75em;
     margin: 0.5em;
-    padding: 0.25em;
+    margin-bottom: 0em;
+}
+
+#panel-menu-button {
+    width: 1.5em;
+    height: 0.95em;
+    margin: 0.19em 1.125em 0em 1.125em;
+}
+
+#panel-menu-button div {
+    width: 1.5em;
+    height: 0.19em;
+    margin: 0.19em 0em 0em 0em;
+    background-color: black;
     border-radius: 0.5em;
-    background-color: rgba(255,255,255,0.75);
 }

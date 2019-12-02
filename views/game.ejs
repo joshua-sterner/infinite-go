@@ -7,16 +7,22 @@
     </head>
     <body>
         <canvas id="goban"></canvas>
-        <div class="panel">
+        <div id="panel">
             <div class="logo-panel">
                 <img class="logo" src="infinite_go_logo_transparent.png">
                 <h2>infinitego.net</h2>
                 <hr>
             </div>
-            <a href="/logout">Sign Out</a>
+            <img class="close-icon" src="close_icon.png" onclick="close_panel()">
+            <a class="sign-out" href="/logout">Sign Out</a>
         </div>
-        <div id="panel-icon">
+        <div id="panel-icon" onclick="open_panel()">
             <img src="infinite_go_logo_transparent.png">
+            <div id="panel-menu-button">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
         </div>
         <script type="text/javascript" src="goban.js"></script>
     </body>

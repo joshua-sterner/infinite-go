@@ -139,3 +139,19 @@ const goban = new Goban(document.getElementById('goban'));
 
 window.addEventListener('resize', () => goban.resize());
 window.addEventListener('load', () => goban.resize());
+
+function open_panel() {
+    const panel_icon = document.getElementById('panel-icon');
+    const panel = document.getElementById('panel');
+    panel_icon.style.display = 'none';
+    panel.style.display = 'grid';
+    goban.resize();
+}
+
+function close_panel() {
+    const panel_icon = document.getElementById('panel-icon');
+    const panel = document.getElementById('panel');
+    panel_icon.style.display = 'block';
+    panel.style.display = 'none';
+    goban.resize();
+}
