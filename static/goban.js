@@ -89,11 +89,11 @@ class Goban {
         if (!this.unconfirmed_stone) {
             this.place_unconfirmed_stone(this.stone_color, out_pos);
         } else {
-            if (this.unconfirmed_stone.position.x != out_pos.x &&
-                this.unconfirmed_stone.position.y != out_pos.y) {
-                this.place_unconfirmed_stone(this.stone_color, out_pos);
-            } else {
+            if (this.unconfirmed_stone.position.x == out_pos.x &&
+                this.unconfirmed_stone.position.y == out_pos.y) {
                 this.confirm_stone_placement();
+            } else {
+                this.place_unconfirmed_stone(this.stone_color, out_pos);
             }
         }
         window.requestAnimationFrame(() => this.draw());
