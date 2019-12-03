@@ -1,8 +1,12 @@
+html, body {
+    overscroll-behavior-y: none;
+    height: 100%;
+}
+
 body {
     display: grid;
     grid-template-columns: 1fr auto;
-    grid-template-rows: 100vh;
-    height: 100%;
+    grid-template-rows: 100%;
     margin: 0px;
     font-family: sans;
 }
@@ -15,6 +19,7 @@ body {
     grid-column-start: 1;
     grid-column-end: 3;
     grid-row: 1;
+    user-select: none;
 }
 
 #panel {
@@ -25,6 +30,12 @@ body {
     display: none;
     grid-row: 1;
     grid-template-columns: 1fr auto;
+}
+
+.panel-backdrop-filter {
+    background-color: rgba(240,240,240,0.75) !important;
+    backdrop-filter: blur(0.3em);
+    grid-column: 2;
 }
 
 .logo-panel {
@@ -41,6 +52,40 @@ body {
 .logo-panel hr {
     margin: 1em;
     grid-row: 1;
+    color: black;
+    background-color: black;
+    border: none;
+    height: 1px;
+}
+
+.team-selection-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.team-button {
+    width: 2em;
+    height: 2em;
+    border: 2px solid black;
+    border-radius: 3em;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
+}
+
+.active-team-button {
+    box-shadow: 0 0 0.5em 0.0em rgba(22, 148, 213, 0.8);
+}
+
+#white-team-button {
+    background-color: white;
+}
+
+#black-team-button {
+    background-color: black;
+}
+
+#team-indicator {
+    color: rgba(100,100,100);
 }
 
 #panel .close-icon {
@@ -79,6 +124,8 @@ body {
     width: 3.75em;
     height: 5.08em;
     margin: 0.5em;
+    z-index: 1;
+    backdrop-filter: blur(0.3em);
 }
 
 #panel-icon img {

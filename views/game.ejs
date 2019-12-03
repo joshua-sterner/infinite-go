@@ -12,6 +12,11 @@
                 <img class="logo" src="infinite_go_logo_transparent.png">
                 <h2>infinitego.net</h2>
                 <hr>
+                <div class="team-selection-buttons">
+                    <div id="white-team-button" class="team-button active-team-button" onclick="change_team('white')"></div>
+                    <div id="black-team-button" class="team-button" onclick="change_team('black')"></div>
+                </div>
+                <p id="team-indicator">Team: White</p>
             </div>
             <img class="close-icon" src="close_icon.png" onclick="close_panel()">
             <a class="sign-out" href="/logout">Sign Out</a>
