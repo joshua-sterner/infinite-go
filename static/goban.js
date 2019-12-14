@@ -11,33 +11,14 @@ class Goban {
         this.panning_touch_id = null;
         this.stones = [];
         this.stone_color = 'white';
-        canvas.addEventListener('mousedown', (e) => {
-            this.panning = true;
-            this.panning_from.x = e.clientX;
-            this.panning_from.y = e.clientY;
-            this.initial_touch_position = {x: e.clientX, y: e.clientY};
-        });
-        canvas.addEventListener('mouseup', (e) => {
-            this.panning = false;
-            if (this.is_click(e.clientX, e.clientY)) {
-                this.grid_click_release(e.clientX, e.clientY);
-            }
-        });
-        canvas.addEventListener('mouseout', (e) => {
-            this.panning = false;
-        });
-        canvas.addEventListener('mousemove', (e) => {
-            if (!this.panning) {
-                return;
-            }
-            const delta_x = e.clientX - this.panning_from.x;
-            const delta_y = e.clientY - this.panning_from.y;
-            this.offset.x += delta_x;
-            this.offset.y += delta_y;
-            this.panning_from.x = e.clientX;
-            this.panning_from.y = e.clientY;
-            window.requestAnimationFrame(() => this.draw());
-        });
+
+        this.initial_touch_position = {x: -1024, y: -1024};
+
+        canvas.addEventListener('mousedown', (e) => this.handle_press(e.clientX, e.clientY));
+        canvas.addEventListener('mouseup', (e) => this.handle_release(e.clientX, e.clientY));
+        canvas.addEventListener('mousemove', (e) => this.handle_move(e.clientX, e.clientY));
+        canvas.addEventListener('mouseout', (e) => this.handle_out());
+
         canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length != 1) {
                 this.panning = false;
@@ -75,6 +56,37 @@ class Goban {
             this.panning_from.y = e.touches[0].clientY;
             window.requestAnimationFrame(() => this.draw());
         });
+    }
+
+    handle_press(x, y) {
+        this.panning = true;
+        this.panning_from.x = x;
+        this.panning_from.y = y;
+        this.initial_touch_position = {x: x, y: y};
+    }
+
+    handle_release(x, y) {
+        this.panning = false;
+        if (this.is_click(x, y)) {
+            this.grid_click_release(x, y);
+        }
+    }
+
+    handle_move(x, y) {
+        if (!this.panning) {
+            return;
+        }
+        const delta_x = e.clientX - this.panning_from.x;
+        const delta_y = e.clientY - this.panning_from.y;
+        this.offset.x += delta_x;
+        this.offset.y += delta_y;
+        this.panning_from.x = e.clientX;
+        this.panning_from.y = e.clientY;
+        window.requestAnimationFrame(() => this.draw());
+    }
+
+    handle_out() {
+        this.panning = false;
     }
 
     is_click(x, y) {
@@ -186,65 +198,4 @@ class Goban {
         window.requestAnimationFrame(() => this.draw());
     }
 
-}
-const goban = new Goban(document.getElementById('goban'));
-goban.stones = [
-    {color:'white', position:{x:2, y:3}},
-    {color:'black', position:{x:5, y:7}},
-    {color:'black', position:{x:6, y:6}},
-    {color:'black', position:{x:6, y:8}},
-    {color:'white', position:{x:6, y:7}},
-    {color:'white', position:{x:7, y:8}},
-    {color:'white', position:{x:7, y:6}},
-    {color:'white', position:{x:8, y:7}},
-    {color:'black', position:{x:0, y:0}},
-    {color:'black', position:{x:1, y:0}},
-    {color:'black', position:{x:0, y:1}},
-]
-window.addEventListener('resize', () => goban.resize());
-window.addEventListener('load', () => {
-    goban.resize()
-    const panel = document.getElementById('panel');
-    if (CSS.supports('backdrop-filter', 'blur(1px)')) {
-        panel.classList.add('panel-backdrop-filter');
-    }
-});
-
-function open_panel() {
-    const panel_icon = document.getElementById('panel-icon');
-    const panel = document.getElementById('panel');
-    panel_icon.style.display = 'none';
-    panel.style.display = 'grid';
-    goban.resize();
-}
-
-function close_panel() {
-    const panel_icon = document.getElementById('panel-icon');
-    const panel = document.getElementById('panel');
-    panel_icon.style.display = 'block';
-    panel.style.display = 'none';
-    goban.resize();
-}
-
-function change_team(color) {
-    const white_team_button = document.getElementById('white-team-button');
-    const black_team_button = document.getElementById('black-team-button');
-    team_indicator = document.getElementById('team-indicator');
-    goban.stone_color = color;
-    if (color == 'white') {
-        white_team_button.classList.add('active-team-button');
-        black_team_button.classList.remove('active-team-button');
-        team_indicator.innerHTML = 'Team: White';
-        if (goban.unconfirmed_stone) {
-            goban.unconfirmed_stone.color = 'white';
-        }
-    } else {
-        black_team_button.classList.add('active-team-button');
-        white_team_button.classList.remove('active-team-button');
-        team_indicator.innerHTML = 'Team: Black';
-        if (goban.unconfirmed_stone) {
-            goban.unconfirmed_stone.color = 'black';
-        }
-    }
-    window.requestAnimationFrame(() => goban.draw());
 }
