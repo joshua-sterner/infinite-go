@@ -1,0 +1,93 @@
+0.0.0:
+    Frontend login/registration:
+        Account Creation
+        Account Login
+        Email Verification
+
+    Frontend Goban:
+        Stone Placement
+        Viewport Panning
+        Logout
+        Team Switching
+        
+    Frontend Goban Tests
+    Frontend End To End Tests
+    Frontend Websocket:
+        Frontend Sends:
+            Stone placement
+            Viewport Request
+        Frontend Recieves:
+            Stone Placement (confirmation and placement of stones by other players)
+            Stone Removal
+            Viewport Response
+                List of stones in viewport
+                Viewport Coords
+    Backend Websocket:
+        Backend Sends:
+            Stone Placement
+            Stone Removal
+            Viewport Response
+                List of stones in viewport
+                Viewport Coordinates
+        Backend Recieves:
+            Player Joined
+    Backend Stone Storage
+    Backend Stone Capture
+
+0.1.0:
+    Territory Computation and Display
+    Global, Player Territory & Capture Stats:
+        Total White Territory
+        Total White Captures
+        Total White Score
+
+        Total Black Territory
+        Total Black Captures
+        Total Black Score
+
+        Users Weighted White Territory Contributions
+        Users Weighted White Capture Contributions
+        Users Weighted White Score
+
+        Users Weighted Black Territory Contributions
+        Users Weighted Black Capture Contributions
+        Users Weighted Black Score
+
+        Users Weighted Total Territory Contributions
+        Users Weighted Total Capture Contributions
+        Users Weighted Total Score
+
+0.2.0:
+    Battlegrounds:
+        Localized turn-taking
+        Players can vote on time limit for turns
+        Players can vote to enable/disable turn-based play
+        Battlegrounds are formed by overlapping viewports of two or more players
+        Battleground boundaries are dependent upon viewport history of players in the battleground:
+            Grid-points that were within a battleground stay within the battleground for some duration of time after they are no longer in the viewport of any players within a battleground.
+        When two or more battlegrounds are bridged by one or more player viewports, they must merge into a single battleground:
+            All players are notified of this change
+            A vote is forced such that players must choose which battlegrounds rules to follow, with an additional option of choosing to vote on a new ruleset.
+
+0.3.0:
+    Battleground map:
+        Live map of all battlegrounds with player counts
+        Players can teleport to any battleground on the map
+
+0.4.0:
+    Battleground chat:
+        Players can send text-based messages to other players within a battleground
+
+0.5.0:
+    Following:
+        Players can follow other players profiles (really just allows quick access/favoriting of player profiles at this stage)
+    Players can teleport to the location of other players
+
+0.6.0:
+    Achievements/Challenges:
+        Players get a challenge score that can be increased by completing challenges
+        Challenges could include things like creating certain shapes under certain conditions, capturing a particular number of stones, etc...
+
+0.7.0:
+    Voice chat
+
