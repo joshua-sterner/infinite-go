@@ -6,12 +6,11 @@ class Goban {
         //TODO use grid height instead
         this.grid_width = 40;
         this.offset = {x:60, y:60};
-        this.panning = false;
         this.panning_from = {x:0, y:0};
         this.panning_touch_id = null;
         this.stones = [];
         this.stone_color = 'white';
-
+        this.offset = {x: 0, y: 0};
         this.initial_touch_position = {x: -1024, y: -1024};
 
         canvas.addEventListener('mousedown', (e) => this.handle_press(e.clientX, e.clientY));
@@ -21,40 +20,25 @@ class Goban {
 
         canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length != 1) {
-                this.panning = false;
+                this.handle_out();
                 return;
             }
-            this.panning_from.x = e.touches[0].clientX;
-            this.panning_from.y = e.touches[0].clientY;
-            this.initial_touch_position = {x: e.touches[0].clientX, y: e.touches[0].clientY};
-            this.panning_touch_id = e.touches[0].identifier;
-            this.panning = true;
+            this.handle_press(e.touches[0].clientX, e.touches[0].clientY);
         });
         canvas.addEventListener('touchend', (e) => {
-            for (let i = 0; i < e.touches.length; i++) {
-                const touch = e.touches[i];
-                if (touch.identifier == this.panning_touch_id) {
-                    this.panning = false;
-                    this.panning_touch_id = null;
-                    if (this.is_click(touch.clientX, touch.clientY)) {
-                        this.grid_click_release(touch.clientX, touch.clientY);
-                    }
-                }
+            if (e.touches.length == 0 && e.changedTouches.length == 1) {
+                this.handle_release(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
             }
         });
         canvas.addEventListener('touchmove', (e) => {
-            if (e.touches.length != 1 || e.touches[0].identifier != this.panning_touch_id) {
-                this.panning = false;
-                this.panning_touch_id = null;
-                return;
+            if (e.touches.length == 1) {
+                this.handle_move(e.touches[0].clientX, e.touches[0].clientY);
             }
-            const delta_x = e.touches[0].clientX - this.panning_from.x;
-            const delta_y = e.touches[0].clientY - this.panning_from.y;
-            this.offset.x += delta_x;
-            this.offset.y += delta_y;
-            this.panning_from.x = e.touches[0].clientX;
-            this.panning_from.y = e.touches[0].clientY;
-            window.requestAnimationFrame(() => this.draw());
+        });
+        canvas.addEventListener('touchcancel', (e) => {
+            if (e.touches.length == 1) {
+                this.handle_out();
+            }
         });
     }
 
@@ -76,12 +60,12 @@ class Goban {
         if (!this.panning) {
             return;
         }
-        const delta_x = e.clientX - this.panning_from.x;
-        const delta_y = e.clientY - this.panning_from.y;
+        const delta_x = x - this.panning_from.x;
+        const delta_y = y - this.panning_from.y;
         this.offset.x += delta_x;
         this.offset.y += delta_y;
-        this.panning_from.x = e.clientX;
-        this.panning_from.y = e.clientY;
+        this.panning_from.x = x; 
+        this.panning_from.y = y;
         window.requestAnimationFrame(() => this.draw());
     }
 

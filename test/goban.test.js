@@ -70,6 +70,11 @@ describe('Goban', () => {
             assert(goban.initial_touch_position.x == -1024);
             assert(goban.initial_touch_position.y == -1024);
         });
+        it('sets initial offset to 0,0', () => {
+            assert(goban.offset);
+            assert(goban.offset.x == 0);
+            assert(goban.offset.y == 0);
+        });
     });
 
     describe('Event Listeners', () => {
@@ -137,10 +142,94 @@ describe('Goban', () => {
                 assert(goban.handle_out_calls === 1);
             });
         });
-        describe('touchstart', () => {
-
+        describe('touch events', () => {
+            const touch = {clientX: 123, clientY: 456, identifier: 789};
+            const touch2 = {clientX: 321, clientY: 654, identifier: 987};
+            const single_touch_event = {touches: [touch]};
+            const double_touch_event = {touches: [touch, touch2]};
+            describe('touchstart', () => {
+                it('calls handle_press with correct coordinates when touches.length == 1', () => {
+                    canvas.event_listeners['touchstart'][0](single_touch_event);
+                    assert(goban.handle_press_calls.length === 1);
+                    assert(goban.handle_press_calls[0][0] == 123);
+                    assert(goban.handle_press_calls[0][1] == 456);
+                });
+                it('calls handle_out when touches.length != 1', () => {
+                    canvas.event_listeners['touchstart'][0](double_touch_event);
+                    assert(goban.handle_out_calls === 1);
+                });
+                it('doesn\'t call handle_press when touches.length != 1', () => {
+                    canvas.event_listeners['touchstart'][0](double_touch_event);
+                    assert(goban.handle_press_calls.length === 0);
+                });
+            });
+            describe('touchend', () => {
+                it('calls handle_release with correct coordinates when single touch ends', () => {
+                    const touch_event = {touches: [], changedTouches: [touch]};
+                    canvas.event_listeners['touchend'][0](touch_event);
+                    assert(goban.handle_release_calls.length === 1);
+                    assert(goban.handle_release_calls[0][0] == 123);
+                    assert(goban.handle_release_calls[0][1] == 456);
+                });
+                it('doesn\'t call handle_release when one of two touches end', () => {
+                    const touch_event = {touches: [touch, touch2], changedTouches: [touch]};
+                    canvas.event_listeners['touchend'][0](touch_event);
+                    assert(goban.handle_release_calls.length === 0);
+                });
+            });
+            describe('touchmove', () => {
+                it('calls handle_move with correct coordinates when touches.length == 1', () => {
+                    canvas.event_listeners['touchmove'][0](single_touch_event);
+                    assert(goban.handle_move_calls.length === 1);
+                    assert(goban.handle_move_calls[0][0] == 123);
+                    assert(goban.handle_move_calls[0][1] == 456);
+                });
+                it('doesn\'t call handle_move when touches.length != 1', () => {
+                    canvas.event_listeners['touchmove'][0](double_touch_event);
+                    assert(goban.handle_move_calls.length === 0);
+                });
+            });
+            describe('touchcancel', () => {
+                it('calls handle_out when touches.length == 1', () => {
+                    canvas.event_listeners['touchcancel'][0](single_touch_event);
+                    assert(goban.handle_out_calls === 1);
+                });
+                it('doesn\'t call handle_out when touches.length != 1', () => {
+                    canvas.event_listeners['touchcancel'][0](double_touch_event);
+                    assert(goban.handle_out_calls === 0);
+                });
+            });
         });
     });
+
+    describe('panning', () => {
+        it('move after press pans', () => {
+            const expected_offset = {x: goban.offset.x + 3, y: goban.offset.y + 4};
+            goban.handle_press(1, 2);
+            goban.handle_move(4, 6);
+            assert.deepStrictEqual(goban.offset, expected_offset);
+        });
+        it('move before press doesn\'t pan', () => {
+            const initial_offset = {x: goban.offset.x, y: goban.offset.y};
+            goban.handle_move(3,4);
+            assert.deepStrictEqual(goban.offset, initial_offset);
+        });
+        it('move after out after press doesn\'t pan', () => {
+            const initial_offset = {x: goban.offset.x, y: goban.offset.y};
+            goban.handle_press(1, 2);
+            goban.handle_out();
+            goban.handle_move(3, 4);
+            assert.deepStrictEqual(goban.offset, initial_offset);
+        });
+        it('move after release after press doesn\'t pan', () => {
+            const initial_offset = {x: goban.offset.x, y: goban.offset.y};
+            goban.handle_press(1, 2);
+            goban.handle_release(1, 2);
+            goban.handle_move(3, 4);
+            assert.deepStrictEqual(goban.offset, initial_offset);
+        });
+    });
+
 });
 
 
