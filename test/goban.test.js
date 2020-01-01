@@ -294,18 +294,19 @@ describe('Goban', () => {
                     goban._handle_release(i.release.x, i.release.y);
                     assert(!goban.unconfirmed_stone, `goban.unconfirmed_stone: ${util.inspect(goban.unconfirmed_stone)}`);
                 });
+                const team_color = color;
+                ['black', 'white'].forEach((stone_color) => {
+                    it(`press @ (${i.press.x}, ${i.press.y}), release @ (${i.release.x}, ${i.release.y}) with offset (${i.offset.x}, ${i.offset.y}) as ${team_color} on grid point (${i.grid.x}, ${i.grid.y}) with ${stone_color} stone doesn't place stone`, () => {
+                        goban.offset = i.offset;
+                        goban.stones = [{color: stone_color, position: {x: i.grid.x, y: i.grid.y}}];
+                        goban.change_team(color);
+                        goban._handle_press(i.press.x, i.press.y);
+                        goban._handle_release(i.release.x, i.release.y);
+                        assert.equal(goban.stones.length, 1);
+                    });
+                });
             });
         });
-
-        it('tap with white team selected on grid point with white stone ignored', () => {
-        });
-        it('tap with black team selected on grid point with white stone ignored', () => {
-        });
-        it('tap with white team selected on grid point with black stone ignored', () => {
-        });
-        it('tap with black team selected on grid point with black stone ignored', () => {
-        });
-
     });
 });
 
