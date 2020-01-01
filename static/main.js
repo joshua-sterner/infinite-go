@@ -41,21 +41,14 @@ function change_team(color) {
     const white_team_button = document.getElementById('white-team-button');
     const black_team_button = document.getElementById('black-team-button');
     team_indicator = document.getElementById('team-indicator');
-    goban.stone_color = color;
     if (color == 'white') {
         white_team_button.classList.add('active-team-button');
         black_team_button.classList.remove('active-team-button');
         team_indicator.innerHTML = 'Team: White';
-        if (goban.unconfirmed_stone) {
-            goban.unconfirmed_stone.color = 'white';
-        }
     } else {
         black_team_button.classList.add('active-team-button');
         white_team_button.classList.remove('active-team-button');
         team_indicator.innerHTML = 'Team: Black';
-        if (goban.unconfirmed_stone) {
-            goban.unconfirmed_stone.color = 'black';
-        }
     }
-    window.requestAnimationFrame(() => goban.draw());
+    goban.change_team(color);
 }

@@ -1,5 +1,4 @@
 class Goban {
-    //TODO prefix private stuff w/ underscore
     constructor(canvas) {
         this._canvas = canvas;
         this._ctx = canvas.getContext('2d');
@@ -10,9 +9,10 @@ class Goban {
         this._panning_from = {x:0, y:0};
         this._panning_touch_id = null;
         this.stones = [];
-        this.stone_color = 'white';
+        this._stone_color = 'white';
         this.offset = {x: 0, y: 0};
         this._initial_touch_position = {x: -1024, y: -1024};
+        this.unconfirmed_stone = null;
 
         canvas.addEventListener('mousedown', (e) => this._handle_press(e.clientX, e.clientY));
         canvas.addEventListener('mouseup', (e) => this._handle_release(e.clientX, e.clientY));
@@ -50,6 +50,14 @@ class Goban {
         window.requestAnimationFrame(() => this._draw());
     }
 
+    change_team(color) {
+        this._stone_color = color;
+        if (this.unconfirmed_stone) {
+            this.unconfirmed_stone.color = color;
+        }
+        window.requestAnimationFrame(() => this._draw());
+    }
+
     _handle_press(x, y) {
         this._panning = true;
         this._panning_from.x = x;
@@ -84,13 +92,13 @@ class Goban {
     _grid_click_release(x, y) {
         const out_pos = this._to_grid_position(x, y);
         if (!this.unconfirmed_stone) {
-            this._place_unconfirmed_stone(this.stone_color, out_pos);
+            this._place_unconfirmed_stone(this._stone_color, out_pos);
         } else {
             if (this.unconfirmed_stone.position.x == out_pos.x &&
                 this.unconfirmed_stone.position.y == out_pos.y) {
                 this._confirm_stone_placement();
             } else {
-                this._place_unconfirmed_stone(this.stone_color, out_pos);
+                this._place_unconfirmed_stone(this._stone_color, out_pos);
             }
         }
         window.requestAnimationFrame(() => this._draw());

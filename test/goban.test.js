@@ -1,5 +1,6 @@
 const fs = require('fs');
 const assert = require('assert');
+const util = require('util');
 
 class MockWindow {
     constructor() {
@@ -7,15 +8,13 @@ class MockWindow {
     }
 
     reset() {
-        this.requestAnimationFrameCalls = [];
+        this.numRequestAnimationFrameCalls = 0;
     }
 
     requestAnimationFrame(cb) {
-        this.requestAnimationFrameCalls.push(cb);
+        this.numRequestAnimationFrameCalls += 1;
     }
 }
-
-const window = new MockWindow();
 
 // Loading the Goban class definition this way because I don't want to add node.js
 //  specific code to the front-end code.
@@ -48,10 +47,11 @@ class MockCanvas {
 
 }
 
+const window = new MockWindow();
+
 describe('Goban', () => {
 
     const canvas = new MockCanvas();
-    const window = new MockWindow();
     let goban;
 
     beforeEach(() => {
@@ -230,12 +230,71 @@ describe('Goban', () => {
         });
     });
 
-    describe('tap', () => {
-        //TODO decide how to test tap vs pan threshold.
-        //TODO decide how to take pan offset into account for these tests.
-        it('tap as white on empty grid point places unconfirmed white stone', () => {
+    describe('change_team', () => {
+        it('change_team(\'white\') changes unconfirmed_stone.color to white', () => {
+            goban.unconfirmed_stone = {color: 'black', position:{x:0, y:0}};
+            goban.change_team('white');
+            assert.equal(goban.unconfirmed_stone.color, 'white');
         });
-        it('tap as black on empty grid point places unconfirmed black stone', () => {
+        it('change_team(\'black\') changes unconfirmed_stone.color to black', () => {
+            goban.unconfirmed_stone = {color: 'white', position:{x:0, y:0}};
+            goban.change_team('black');
+            assert.equal(goban.unconfirmed_stone.color, 'black');
+        });
+        it('calls requestAnimationFrame', () => {
+            goban.change_team('white');
+            assert.equal(window.numRequestAnimationFrameCalls, 1);
+        });
+    });
+
+    describe('tap', () => {
+        [
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: 0, y: 0}, grid: {x: 0, y: 0}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: 0, y: 0}, grid: {x: 0, y: 0}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: 40, y: 0}, grid: {x: -1, y: 0}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: 40, y: 0}, grid: {x: -1, y: 0}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: -40, y: 0}, grid: {x: 1, y: 0}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: -40, y: 0}, grid: {x: 1, y: 0}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: 0, y: 43}, grid: {x: 0, y: -1}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: 0, y: 43}, grid: {x: 0, y: -1}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: 0, y: -43}, grid: {x: 0, y: 1}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: 0, y: -43}, grid: {x: 0, y: 1}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: 40, y: 43}, grid: {x: -1, y: -1}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: 40, y: 43}, grid: {x: -1, y: -1}},
+            {press: {x: 0, y: 0}, release: {x: 0, y: 0}, offset: {x: -40, y: -43}, grid: {x: 1, y: 1}},
+            {press: {x: 5, y: 2}, release: {x: 1, y: 3}, offset: {x: -40, y: -43}, grid: {x: 1, y: 1}}
+        ].forEach((i) => {
+            ['black', 'white'].forEach((color) => {
+                it(`press @ (${i.press.x}, ${i.press.y}), release @ (${i.release.x}, ${i.release.y}}) with offset (${i.offset.x}, ${i.offset.y}) as ${color} on empty grid point places unconfirmed ${color} stone @ grid point (${i.grid.x}, ${i.grid.y})`, () => {
+                    goban.offset = i.offset;
+                    goban.change_team(color);
+                    goban._handle_press(i.press.x, i.press.y);
+                    goban._handle_release(i.release.x, i.release.y);
+                    assert(goban.unconfirmed_stone);
+                    const expected = {color: color, position: {x: i.grid.x, y: i.grid.y}};
+                    assert.deepStrictEqual(goban.unconfirmed_stone, expected);
+                });
+                it(`tap with ${color} team selected on grid point with unconfirmed ${color} stone places ${color} stone`, () => {
+                    goban.stones = [{color:'white', position: {x:-12, y:-34}}];
+                    goban.unconfirmed_stone = {color: color, position: {x: i.grid.x, y: i.grid.y}};
+                    goban.offset = i.offset;
+                    goban.change_team(color);
+                    goban._handle_press(i.press.x, i.press.y);
+                    goban._handle_release(i.release.x, i.release.y);
+                    assert.equal(goban.stones.length, 2);
+                    const expected = {color: color, position: {x: i.grid.x, y: i.grid.y}};
+                    assert.deepStrictEqual(goban.stones[1], expected);
+                });
+                it(`tap with ${color} team selected on grid point with unconfirmed ${color} stone removes unconfirmed stone`, () => {
+                    goban.stones = [{color:'white', position: {x:-12, y:-34}}];
+                    goban.unconfirmed_stone = {color: color, position: {x: i.grid.x, y: i.grid.y}};
+                    goban.offset = i.offset;
+                    goban.change_team(color);
+                    goban._handle_press(i.press.x, i.press.y);
+                    goban._handle_release(i.release.x, i.release.y);
+                    assert(!goban.unconfirmed_stone, `goban.unconfirmed_stone: ${util.inspect(goban.unconfirmed_stone)}`);
+                });
+            });
         });
 
         it('tap with white team selected on grid point with white stone ignored', () => {
@@ -247,44 +306,14 @@ describe('Goban', () => {
         it('tap with black team selected on grid point with black stone ignored', () => {
         });
 
-        it('tap with white team selected on grid point with unconfirmed white stone places white stone, removes unconfirmed stone', () => {
-        });
-        it('tap with black team selected on grid point with unconfirmed white stone places white stone, removes unconfirmed stone', () => {
-        });
-        it('tap with white team selected on grid point with unconfirmed black stone places black stone, removes unconfirmed stone', () => {
-        });
-        it('tap with black team selected on grid point with unconfirmed black stone places black stone, removes unconfirmed stone', () => {
-        });
     });
 });
 
-
-//     handle_grid_point_tap(x, y)
-    //     
-    //     is_click_release(x, y)
-    //         click_press_position
-    //         threshold
-    // 
-    //     on_grid_click_release(x, y)
-    //         calls requestAnimationFrame
-    //         calls place_unconfirmed_stone when no confirmed stone
-    //         confirms unconfirmed stone when clicked on
-    // 
-    //     to_grid_position(x, y)
-// 
+//     grid_width?
+//     grid_height?
 //     draw_grid?
 //     draw_stone?
 //     draw?
-// 
-    //     is_point_empty(pos)
-    //         
-    //     place_unconfirmed_stone(color, pos)
-    // 
-    //     confirm_stone_placement()
-// 
 //     resize()
 //         calls requestAnimationFrame
 //         width, height, devicePixelRatio...
-// 
-//     change_team(color)   
-
