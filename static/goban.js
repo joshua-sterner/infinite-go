@@ -1,5 +1,4 @@
 class Goban {
-    //TODO fix bug on mobile where stones are placed w/ single tap and add regreession tests (broken in 891370516be83b34b3a542b54c8fb26c87230ce7)
     constructor(canvas) {
         this._canvas = canvas;
         this._ctx = canvas.getContext('2d');
@@ -21,6 +20,7 @@ class Goban {
         canvas.addEventListener('mouseout', (e) => this._handle_out());
 
         canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             if (e.touches.length != 1) {
                 this._handle_out();
                 return;
@@ -28,16 +28,19 @@ class Goban {
             this._handle_press(e.touches[0].clientX, e.touches[0].clientY);
         });
         canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
             if (e.touches.length == 0 && e.changedTouches.length == 1) {
                 this._handle_release(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
             }
         });
         canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
             if (e.touches.length == 1) {
                 this._handle_move(e.touches[0].clientX, e.touches[0].clientY);
             }
         });
         canvas.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
             if (e.touches.length == 1) {
                 this._handle_out();
             }

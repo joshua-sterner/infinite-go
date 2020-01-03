@@ -161,8 +161,8 @@ describe('Goban', () => {
         describe('touch events', () => {
             const touch = {clientX: 123, clientY: 456, identifier: 789};
             const touch2 = {clientX: 321, clientY: 654, identifier: 987};
-            const single_touch_event = {touches: [touch]};
-            const double_touch_event = {touches: [touch, touch2]};
+            const single_touch_event = {touches: [touch], preventDefault: function() {}};
+            const double_touch_event = {touches: [touch, touch2], preventDefault: function() {}};
             describe('touchstart', () => {
                 it('calls _handle_press with correct coordinates when touches.length == 1', () => {
                     canvas.event_listeners['touchstart'][0](single_touch_event);
@@ -178,19 +178,29 @@ describe('Goban', () => {
                     canvas.event_listeners['touchstart'][0](double_touch_event);
                     assert.equal(goban._handle_press_calls.length, 0);
                 });
+                it('calls preventDefault to prevent duplicate mouse event on mobile', () => {
+                    const e = {touches: [touch], preventDefault: function() {this.prevent_default_called = true;}};
+                    canvas.event_listeners['touchstart'][0](e);
+                    assert(e.prevent_default_called);
+                });
             });
             describe('touchend', () => {
                 it('calls _handle_release with correct coordinates when single touch ends', () => {
-                    const touch_event = {touches: [], changedTouches: [touch]};
+                    const touch_event = {touches: [], changedTouches: [touch], preventDefault: function() {}};
                     canvas.event_listeners['touchend'][0](touch_event);
                     assert.equal(goban._handle_release_calls.length, 1);
                     assert.equal(goban._handle_release_calls[0][0], 123);
                     assert.equal(goban._handle_release_calls[0][1], 456);
                 });
                 it('doesn\'t call _handle_release when one of two touches end', () => {
-                    const touch_event = {touches: [touch, touch2], changedTouches: [touch]};
+                    const touch_event = {touches: [touch, touch2], changedTouches: [touch], preventDefault: function() {}};
                     canvas.event_listeners['touchend'][0](touch_event);
                     assert.equal(goban._handle_release_calls.length, 0);
+                });
+                it('calls preventDefault to prevent duplicate mouse event on mobile', () => {
+                    const e = {touches: [touch], preventDefault: function() {this.prevent_default_called = true;}};
+                    canvas.event_listeners['touchend'][0](e);
+                    assert(e.prevent_default_called);
                 });
             });
             describe('touchmove', () => {
@@ -204,6 +214,11 @@ describe('Goban', () => {
                     canvas.event_listeners['touchmove'][0](double_touch_event);
                     assert.equal(goban._handle_move_calls.length, 0);
                 });
+                it('calls preventDefault to prevent duplicate mouse event on mobile', () => {
+                    const e = {touches: [touch], preventDefault: function() {this.prevent_default_called = true;}};
+                    canvas.event_listeners['touchmove'][0](e);
+                    assert(e.prevent_default_called);
+                });
             });
             describe('touchcancel', () => {
                 it('calls _handle_out when touches.length == 1', () => {
@@ -213,6 +228,11 @@ describe('Goban', () => {
                 it('doesn\'t call _handle_out when touches.length != 1', () => {
                     canvas.event_listeners['touchcancel'][0](double_touch_event);
                     assert.equal(goban._handle_out_calls, 0);
+                });
+                it('calls preventDefault to prevent duplicate mouse event on mobile', () => {
+                    const e = {touches: [touch], preventDefault: function() {this.prevent_default_called = true;}};
+                    canvas.event_listeners['touchcancel'][0](e);
+                    assert(e.prevent_default_called);
                 });
             });
         });
