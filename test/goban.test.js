@@ -8,11 +8,11 @@ class MockWindow {
     }
 
     reset() {
-        this.numRequestAnimationFrameCalls = 0;
+        this.num_request_animation_frame_calls = 0;
     }
 
     requestAnimationFrame(cb) {
-        this.numRequestAnimationFrameCalls += 1;
+        this.num_request_animation_frame_calls += 1;
     }
 }
 
@@ -24,12 +24,26 @@ const Goban = function() {
     return goban_class;
 }();
 
+class MockContext {
+    constructor() {
+        this.reset();
+    }
+    scale(x, y) {
+        this.scale_calls.push({x: x, y: y});
+    }
+    reset() {
+        this.scale_calls = []
+    }
+}
+
 class MockCanvas {
     constructor() {
+        this.mock_context = new MockContext();
     }
 
     reset() {
         this.event_listeners = {};
+        this.mock_context.reset();
     }
 
     addEventListener(event_type, cb) {
@@ -39,10 +53,12 @@ class MockCanvas {
         this.event_listeners[event_type].push(cb);
     }
 
-    getContext() {
+    getContext(ctx_type) {
         //TODO start testing drawing methods
         // context is only used by drawing methods, which are not being tested here.
-        return null;
+        if (ctx_type == '2d') {
+            return this.mock_context;
+        }
     }
 
 }
@@ -243,7 +259,7 @@ describe('Goban', () => {
         });
         it('calls requestAnimationFrame', () => {
             goban.change_team('white');
-            assert.equal(window.numRequestAnimationFrameCalls, 1);
+            assert.equal(window.num_request_animation_frame_calls, 1);
         });
     });
 
@@ -308,6 +324,50 @@ describe('Goban', () => {
             });
         });
     });
+    describe('resize', () => {
+        beforeEach(() => {
+            delete window.devicePixelRatio;
+        });
+        it('sets canvas width from clientWidth when window.devicePixelRatio undefined', () => {
+            canvas.clientWidth = 1234;
+            goban.resize();
+            assert.equal(canvas.width, 1234);
+        });
+        it('sets canvas width from clientWidth when window.devicePixelRatio is defined', () => {
+            canvas.clientWidth = 1234;
+            window.devicePixelRatio = 2;
+            goban.resize();
+            assert.equal(canvas.width, 2468);
+        });
+        it('sets canvas height from clientHeight when window.devicePixelRatio undefined', () => {
+            canvas.clientHeight = 1234;
+            goban.resize();
+            assert.equal(canvas.height, 1234);
+        });
+        it('sets canvas height from clientHeight when window.devicePixelRatio is defined', () => {
+            canvas.clientHeight = 1234;
+            window.devicePixelRatio = 2;
+            goban.resize();
+            assert.equal(canvas.height, 2468);
+        });
+        it('either does not call ctx.scale or calls ctx.scale(1,1) when window.devicePixelRatio undefined', () => {
+            goban.resize();
+            assert(canvas.mock_context.scale_calls.length == 0 || canvas.mock_context.scale_calls.length == 1);
+            if (canvas.mock_context.scale_calls.length == 1) {
+                assert.deepStrictEqual(canvas.mock_context.scale_calls[0], {x: 1, y: 1});
+            }
+        });
+        it('calls ctx.scale with device_pixel_ratio when window.devicePixelRatio is defined', () => {
+            window.devicePixelRatio = 2;
+            goban.resize();
+            assert.equal(canvas.mock_context.scale_calls.length, 1);
+            assert.deepStrictEqual(canvas.mock_context.scale_calls[0], {x: 2, y: 2});
+        });
+        it('calls requestAnimationFrame', () => {
+            goban.resize();
+            assert.equal(window.num_request_animation_frame_calls, 1);
+        });
+    });
 });
 
 //     grid_width?
@@ -315,6 +375,3 @@ describe('Goban', () => {
 //     draw_grid?
 //     draw_stone?
 //     draw?
-//     resize()
-//         calls requestAnimationFrame
-//         width, height, devicePixelRatio...

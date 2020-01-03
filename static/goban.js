@@ -1,4 +1,5 @@
 class Goban {
+    //TODO fix bug on mobile where stones are placed w/ single tap and add regreession tests (broken in 891370516be83b34b3a542b54c8fb26c87230ce7)
     constructor(canvas) {
         this._canvas = canvas;
         this._ctx = canvas.getContext('2d');
@@ -44,9 +45,10 @@ class Goban {
     }
 
     resize() {
-        //TODO window.devicePixelRatio || 1
-        this._canvas.width = this._canvas.clientWidth;
-        this._canvas.height = this._canvas.clientHeight;
+        const device_pixel_ratio  = window.devicePixelRatio || 1;
+        this._canvas.width = this._canvas.clientWidth * device_pixel_ratio;
+        this._canvas.height = this._canvas.clientHeight * device_pixel_ratio;
+        this._ctx.scale(device_pixel_ratio, device_pixel_ratio);
         window.requestAnimationFrame(() => this._draw());
     }
 
