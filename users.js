@@ -18,6 +18,7 @@ function db_user_to_user(db_user) {
 class Users {
 
     constructor(db_connection_pool) {
+        //TODO Users.MAX_USERNAME_LENGTH should be defined in one place
         this.MAX_USERNAME_LENGTH = 127;
         this.db_connection_pool = db_connection_pool;
     }

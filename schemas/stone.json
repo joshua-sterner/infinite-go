@@ -4,9 +4,9 @@
     "type": "object",
     "properties": {
         "placed_by": {
-            "$ref": "https://infinitego.net/schemas/player_observations/user.json"
+            "type": "string"
         },
-        "placed_on": {
+        "date_placed": {
             "$ref": "https://infinitego.net/schemas/datetime.json"
         },
         "placed_at": {

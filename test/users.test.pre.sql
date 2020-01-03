@@ -1,4 +1,4 @@
-DROP TABLE users;
+DROP TABLE users CASCADE;
 CREATE TABLE users ( id serial PRIMARY KEY,
 username VARCHAR (127) UNIQUE NOT NULL,
 password VARCHAR (511) NOT NULL,
