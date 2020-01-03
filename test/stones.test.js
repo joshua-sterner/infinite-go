@@ -19,6 +19,20 @@ const test_stone_2 = {
     color: 'black'
 };
 
+function stones_equal(lhs, rhs) {
+    return lhs.x === rhs.x &&
+        lhs.y === rhs.y &&
+        lhs.placed_by === rhs.placed_by &&
+        lhs.date_placed === rhs.date_placed &&
+        lhs.color === rhs.color;
+}
+
+function stone_in_list(stone, list) {
+    return list.some((stone2) => {
+        return stones_equal(stone, stone2);
+    });
+}
+
 describe('Stones', () => {
     let db_connection_pool;
     let stones;
@@ -28,7 +42,7 @@ describe('Stones', () => {
 
     beforeEach(() => {
         // prevent psql command from warning about cascading drop
-        child_process.execSync(`psql ${db.connection_url} -c "DROP TABLE stones;"`);
+        child_process.execSync(`psql ${db.connection_url} -c "DROP TABLE IF EXISTS stones;"`);
         // need to load users test data because the stone table has
         // a foreign key referencing the usernames column in users
         child_process.execSync(`psql ${db.connection_url} -f test/users.test.pre.sql`);
@@ -38,32 +52,45 @@ describe('Stones', () => {
 
     describe('#get_by_rect', () => {
         it('get_by_rect({x0: 12, y0: 34, x1: 12, y1: 34}) resolves to [stone @ (12, 34)]', async function() {
-            const stone = await stones.get_by_rect({x0: 12, y0: 34, x1: 12, y1: 34});
+            const stone_list = await stones.get_by_rect({x0: 12, y0: 34, x1: 12, y1: 34});
+            assert.deepStrictEqual(stone_list, [test_stone_1]);
         });
-        it('get_by_rect({x0: -12, y0: -34, x1: -12, y1: -34}) resolves to [stone @ (12, 34)]', async function() {
-            throw new Error('Test not implemented.');
+        it('get_by_rect({x0: -12, y0: -34, x1: -12, y1: -34}) resolves to [stone @ (-12, -34)]', async function() {
+            const stone_list = await stones.get_by_rect({x0: -12, y0: -34, x1: -12, y1: -34});
+            assert.deepStrictEqual(stone_list, [test_stone_2]);
         });
         [{x0: -12, y0: -34, x1: 12, y1: 34},
          {x0: 12, y0: -34, x1: -12, y1: 34},
          {x0: -12, y0: 34, x1: 12, y1: -34},
          {x0: 12, y0: 34, x1: -12, y1: -34}].forEach((rect) => {
             it(`get_by_rect({x0: ${rect.x0}, y0: ${rect.y0}, x1: ${rect.x1}, y1: ${rect.y1}}) resolves to stones in rect`, async function() {
-                throw new Error('Test not implemented.');
+                const stone_list = await(stones.get_by_rect(rect));
+                assert.equal(stone_list.length, 2);
+                assert(stone_in_list(test_stone_1, stone_list));
+                assert(stone_in_list(test_stone_2, stone_list));
             });
         });
         it('get_by_rect over empty rect resolves to empty list', async function() {
-            throw new Error('Test not implemented.');
+            const rect = {x0: -1, y0: -1, x1: 1, y1: 1};
+            const stone_list = await(stones.get_by_rect(rect));
+            assert.equal(stone_list.length, 0);
         });
         ['x0', 'y0', 'x1', 'y1'].forEach((field) => {
             it(`rejects when rect.${field} not provided`, async function() {
-                throw new Error('Test not implemented.');
+                let rect = {x0: -12, y0: -34, x1: 12, y1: 34};
+                eval(`delete rect.${field}`);
+                await assert.rejects(stones.get_by_rect(rect));
             });
             it(`rejects when rect.${field} not an integer`, async function() {
-                throw new Error('Test not implemented.');
+                let rect = {x0: -12, y0: -34, x1: 12, y1: 34};
+                rect[field] = 12.34;
+                await assert.rejects(stones.get_by_rect(rect));
             });
         });
         it('rejects on query error', async function() {
-            throw new Error('Test not implemented.');
+            const rect = {x0: -12, y0: -34, x1: 12, y1: 34};
+            let stones = new Stones(db.mock_throwing_pool);
+            await assert.rejects(stones.get_by_rect(rect));
         });
     });
 
