@@ -5,6 +5,22 @@ class Stones {
     }
 
     create(stone) {
+        let date_placed = stone.date_placed;
+        if (!date_placed) {
+            const now = new Date();
+            date_placed = now.toJSON();
+        }
+        return new Promise((resolve, reject) => {
+            if (!stone.x || !stone.y || !stone.placed_by || !stone.color) {
+                return reject(new Error('create(stone): stone must have x, y, placed_by and color fields'));
+            }
+            this.db_connection_pool
+                .query('INSERT INTO stones (x, y, placed_by, date_placed, color) VALUES ($1, $2, $3, $4, $5)', [stone.x, stone.y, stone.placed_by, date_placed, stone.color])
+                .then((res) => {
+                    return resolve();
+                })
+                .catch(err => reject(err));
+        });
     }
 
     get_by_rect(rect) {
@@ -26,6 +42,18 @@ class Stones {
     }
     
     delete_by_point(point) {
+        return new Promise((resolve, reject) => {
+            this.db_connection_pool
+                .query('DELETE FROM stones WHERE x=$1 AND y=$2', [point.x, point.y])
+                .then((res) => {
+                    if (res.rowCount == 0) {
+                        // No stone deleted
+                        return reject(new Error(`Failed to delete stone @ (${point.x}, ${point.y}).`));
+                    }
+                    resolve();
+                })
+                .catch(err => reject(err));
+        });
     }
 }
 

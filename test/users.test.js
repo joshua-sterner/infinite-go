@@ -2,6 +2,9 @@ const Users = require('../users.js').Users;
 const child_process = require('child_process');
 const db = require('./test_db.js');
 const assert = require('assert');
+const test_util = require('./util.js');
+
+const timestamps_equal = test_util.timestamps_equal;
 
 const test_user_1 = {
     'id': 1,
@@ -43,13 +46,6 @@ function users_equal(lhs, rhs) {
         lhs.viewport.left === rhs.viewport.left;
 }
 
-function timestamps_equal(lhs, rhs) {
-    const max_time_delta = 4; // milliseconds
-    const ms_lhs = new Date(lhs).getTime();
-    const ms_rhs = new Date(rhs).getTime();
-    const time_delta = Math.abs(ms_lhs - ms_rhs);
-    return time_delta < max_time_delta;
-}
 
 function expect_error_from_callback(obj, done) {
     if (obj instanceof Error) {
