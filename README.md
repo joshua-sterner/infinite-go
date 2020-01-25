@@ -1,5 +1,8 @@
 # infinite-go
-An online, multiplayer go variant on an infinite board.
+An online, massively multiplayer go variant on an infinite board.
+
+## Project Status
+This project is under active development, but it is currently unreleased. I ocasionally post about its status on my blog, which you can see [here](https://joshuasterner.com/blog/tag/Infinite%20Go).
 
 ## Dependencies
 Express.js, Passport.js, bcrypt, node-postgres
