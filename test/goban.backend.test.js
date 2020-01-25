@@ -1,5 +1,5 @@
 const assert = require('assert');
-const goban = require('../goban.js').Goban;
+const Goban = require('../goban.js').Goban;
 
 //TODO implement ko fight rule...
 
@@ -28,8 +28,9 @@ class MockStones {
         this.reject_from_get_unprocessed_for_processing = false;
         this.reject_from_set_processing_to_processed = false;
         this.set_processing_to_processed_calls = 0;
-        this.delete_by_point calls = [];
+        this.delete_by_point_calls = [];
         this.reject_from_delete_by_point = false;
+        this.stone_list = [];
     }
     
     get_by_rect(rect) {
@@ -89,15 +90,75 @@ class MockStones {
 
 }
 
-//place_stone calls stones.create
-//place_stone prevents placement if no liberties (resolves)
-//place_stone rejects on db error (stones.create, stones.get_by_rect)
 
-//retrieve_stones calls get_by_rect
+describe('Goban (backend)', () => {
+    let stones;
+    let goban;
+    beforeEach(() => {
+        stones = new MockStones();
+        goban = new Goban(stones);
+    });
+    describe('#place_stone', () => {
+        [{x: -3, y: -4}, {x: 1, y: 2}].forEach((point) => {
+            const color = 'black';
+            const opponent_color = 'white';
+            describe(`place ${color} stone @ (${point.x}, ${point.y})`, () => {
+                it(`with no adjacent stones`, async function() {
+                    const stone = {x: point.x, y: point.y, color: 'black'};
+                    await goban.place(stone);
+                    await goban.process_placements();
+                    assert.equal(stones.create_calls.length, 1);
+                    assert.deepStrictEqual(stones.create_calls[0], stone);
+                });
+                it(`with 4 adjacent ${color} stones places stone`, async function() {
+                    const stone = {x: point.x, y: point.y, color: 'black'};
+                    await goban.place({x: stone.x-1, y: stone.y, color: color});
+                    await goban.place({x: stone.x+1, y: stone.y, color: color});
+                    await goban.place({x: stone.x, y: stone.y-1, color: color});
+                    await goban.place({x: stone.x, y: stone.y+1, color: color});
+                    await goban.place(stone);
+                    await goban.process_placements();
+                    assert.equal(stones.create_calls.length, 5);
+                    assert.equal(stones.create_calls.filter(e => {
+                        return e.x === stone.x && e.y === stone.y && e.color === stone.color;
+                    }).length, 1);
+                });
+                it(`with 4 adjacent ${opponent_color} stones does not place stone when process called before final stone placement`, async function() {
+                    const stone = {x: point.x, y: point.y, color: 'black'};
+                    await goban.place({x: stone.x-1, y: stone.y, color: opponent_color});
+                    await goban.place({x: stone.x+1, y: stone.y, color: opponent_color});
+                    await goban.place({x: stone.x, y: stone.y-1, color: opponent_color});
+                    await goban.place({x: stone.x, y: stone.y+1, color: opponent_color});
+                    await goban.process_placements();
+                    await goban.place(stone);
+                    assert.equal(stones.create_calls.length, 4);
+                    assert(!stones.create_calls.some(e => {
+                        return e.x === stone.x && e.y === stone.y && e.color === stone.color;
+                    }));
+                });
+                it(`with 4 adjacent ${opponent_color} stones does not place stone when process called after final stone placement`, async function() {
+                    const stone = {x: point.x, y: point.y, color: 'black'};
+                    await goban.place({x: stone.x-1, y: stone.y, color: opponent_color});
+                    await goban.place({x: stone.x+1, y: stone.y, color: opponent_color});
+                    await goban.place({x: stone.x, y: stone.y-1, color: opponent_color});
+                    await goban.place({x: stone.x, y: stone.y+1, color: opponent_color});
+                    await goban.place(stone);
+                    await goban.process_placements();
+                    assert.equal(stones.create_calls.length, 4);
+                    assert(!stones.create_calls.some(e => {
+                        return e.x === stone.x && e.y === stone.y && e.color === stone.color;
+                    }));
+                });
+            });
+        });
+        //place_stone rejects on db error (stones.create, stones.get_by_rect)
+    });
 
-//process_captures calls stones.get_unprocessed_for_processing (implicit)
-//
-//process_captures calls stones.delete to delete captured stones
-// (implicit, use stones.delete mock to ensure proper deletion/capture of stones in different cases)
-//
-//process_captures resolves to list of newly processed points 
+    //retrieve_stones calls get_by_rect
+
+    //process_captures calls stones.get_unprocessed_for_processing (implicit)
+    //
+    //process_captures calls stones.delete to delete captured stones
+    // (implicit, use stones.delete mock to ensure proper deletion/capture of stones in different cases)
+    //
+});
