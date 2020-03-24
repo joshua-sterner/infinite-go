@@ -3,6 +3,7 @@ class StonePlacementBuffer {
     constructor() {
         this._stones = new Map;
         this.size = 0;
+        this.region_size = 512;
     }
 
     add(stone) {
@@ -54,9 +55,21 @@ class StonePlacementBuffer {
 }
 
 class Goban {
-    constructor(stones, region_size) {
+
+
+    /**
+     * Creates a Goban instance.
+     *
+     * @constructor
+     * @param stones An object that saves stones (probably in a db).
+     * @param region_size the size of the square regions in which changes are tracked.
+     */
+    constructor(stones, region_size=256) {
         this.stones = stones;
         this._placement_buffer = new StonePlacementBuffer;
+        if (region_size <= 0) {
+            throw new Error('region_size must be greater than 0');
+        }
         this._region_size = region_size;
     }
 
@@ -72,9 +85,11 @@ class Goban {
         return false;
     }
 
-    async place(stone) {
-        //TODO verify & refactor
+    region_size() {
+        return this._region_size;
+    }
 
+    async place(stone) {
         // check if unprocessed placements block
         let adjacent_stones = this._placement_buffer.adjacent_stones(stone);
         if (this._stone_placement_blocked(stone, adjacent_stones)) {
@@ -101,7 +116,6 @@ class Goban {
 
         // add to placement queue if not blocked
         this._placement_buffer.add(stone);
-
     }
 
     async retrieve(rect) {
@@ -118,9 +132,14 @@ class Goban {
                         }
                     });
             });
+            resolve();
         });
     }
-
+    
+    /**
+     * @returns An iterable of changed region coordinates in the form {x0:a, y0:b x1:c, y1:d}.
+     * Note that x0, y0, x1, and y1 are considered to be inside the changed region.
+     */
     async process() {
         await this.process_placements();
         await this.process_captures();
@@ -139,6 +158,7 @@ class Goban {
         //   could notify server of changed regions -- probably the best option
         //      server would need to update all viewports overlapping those regions
         //      need to define region somehow
+        return;
     }
 
     async process_captures() {
@@ -153,6 +173,7 @@ class Goban {
         // provide function to be called for each captured stone
         //   server must track captures by user, team
         // resolve to list of changed regions
+        return;
     }
 
 }

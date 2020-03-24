@@ -151,7 +151,51 @@ describe('Goban (backend)', () => {
                 });
             });
         });
-        //place_stone rejects on db error (stones.create, stones.get_by_rect)
+        it('place_stone rejects on db error', async function() {
+            const stone = {x: 0, y: 0, color: 'black'};
+            stones.reject_from_get_by_rect = true;
+            await assert.rejects(goban.place(stone));
+        });
+    });
+    
+    describe('#constructor', () => {
+        it('sets default region size to 256', () => {
+            assert.equal(goban.region_size(), 256);
+        });
+        it('sets custom region size', () => {
+            let goban = new Goban(stones, 123);
+            assert.equal(goban.region_size(), 123);
+        });
+        it('can set custom region size to 1', () => {
+            let goban = new Goban(stones, 1);
+            assert.equal(goban.region_size(), 1);
+        });
+        it('throws when provided region size is 0', () => {
+            assert.throws(() => {
+                let goban = new Goban(stones, 0);
+            });
+        });
+        it('throws when provided region size is less than 0', () => {
+            assert.throws(() => {
+                let goban = new Goban(stones, -1);
+            });
+        });
+    });
+
+    describe('#process', () => {
+        //TODO captures...
+        describe('returns an iterable of changed region coordinates', () => {
+            describe('region_size: 1', () => {
+                it('no changes', async function() {
+                    let empty = true;
+                    let x = await goban.process();
+                    for (i of x) {
+                        empty = false;
+                    }
+                    assert(empty);
+                });
+            });
+        });
     });
 
     //retrieve_stones calls get_by_rect
