@@ -187,12 +187,78 @@ describe('Goban (backend)', () => {
         describe('returns an iterable of changed region coordinates', () => {
             describe('region_size: 1', () => {
                 it('no changes', async function() {
+                    let goban = new Goban(stones, 1);
                     let empty = true;
                     let x = await goban.process();
                     for (i of x) {
                         empty = false;
                     }
                     assert(empty);
+                });
+                it('placed: [[1, 0], [0, -1], [-123, 456]]', async function() {
+                    let goban = new Goban(stones, 1);
+                    await goban.place({x: 1, y: 0, color: 'black'});
+                    await goban.place({x: 0, y: -1, color: 'black'});
+                    await goban.place({x: -123, y: 456, color: 'black'});
+
+                    let expected = [
+                        {x0: 1, y0: 0, x1: 1, y1: 0},
+                        {x0: 0, y0: -1, x1: 0, y1: -1},
+                        {x0: -123, y0: 456, x1: -123, y1: 456}
+                    ];
+
+                    let changed = [];
+                    let process_result = await(goban.process());
+                    for (i of process_result) {
+                        let found = false;
+                        for (let j = 0; j < expected.length; j++) {
+                            if (expected[j].x0 == i.x0 &&
+                                expected[j].y0 == i.y0 &&
+                                expected[j].x1 == i.x1 &&
+                                expected[j].y1 == i.y1) {
+                                found = true;
+                                expected.splice(j, 1);
+                            }
+                        }
+                        assert(found);
+                    }
+                    assert.equal(expected.length, 0);
+                });
+            });
+            describe('region_size: 3', async function() {
+                it('dbg placed: [[-2, -2], [-2, -1], [0, 0], [2, 3], [3, 2], [5, 5]]', async function() {
+                    let goban = new Goban(stones, 3);
+                    await goban.place({x: -2, y: -2, color: 'black'});
+                    await goban.place({x: -2, y: -1, color: 'black'});
+                    await goban.place({x: 0, y: 0, color: 'black'});
+                    await goban.place({x: 2, y: 3, color: 'black'});
+                    await goban.place({x: 3, y: 2, color: 'black'});
+                    await goban.place({x: 5, y: 5, color: 'black'});
+
+                    let expected = [
+                        {x0: -3, y0: -3, x1: -1, y1: -1},
+                        {x0: 0, y0: 0, x1: 2, y1: 2},
+                        {x0: 3, y0: 0, x1: 5, y1: 2},
+                        {x0: 0, y0: 3, x1: 2, y1: 5},
+                        {x0: 3, y0: 3, x1: 5, y1: 5}
+                    ];
+
+                    let changed = [];
+                    let process_result = await(goban.process());
+                    for (i of process_result) {
+                        let found = false;
+                        for (let j = 0; j < expected.length; j++) {
+                            if (expected[j].x0 == i.x0 &&
+                                expected[j].y0 == i.y0 &&
+                                expected[j].x1 == i.x1 &&
+                                expected[j].y1 == i.y1) {
+                                found = true;
+                                expected.splice(j, 1);
+                            }
+                        }
+                        assert(found);
+                    }
+                    assert.equal(expected.length, 0);
                 });
             });
         });

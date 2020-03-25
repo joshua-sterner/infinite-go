@@ -3,7 +3,6 @@ class StonePlacementBuffer {
     constructor() {
         this._stones = new Map;
         this.size = 0;
-        this.region_size = 512;
     }
 
     add(stone) {
@@ -121,27 +120,41 @@ class Goban {
     async retrieve(rect) {
     }
 
-    async process_placements() {
+    /**
+     * @returns the number of placements as a Map of the x coords to a Map of
+     * the y coords to the number of placements
+     */
+    process_placements() {
         return new Promise((resolve, reject) => {
+            let placed = new Map();
             this._placement_buffer.forEach((stone) => {
+                let region_x = Math.floor(stone.x / this._region_size);
+                let region_y = Math.floor(stone.y / this._region_size);
+                if (!placed.has(region_x)) {
+                    placed.set(region_x, new Map([[region_y, 1]]));
+                } else {
+                    let y = placed.get(region_x);
+                    if (y.has(region_y)) {
+                        y.set(region_y, y.get(region_y)+1);
+                    } else {
+                        y.set(region_y, 1);
+                    }
+                }
                 this.stones.create(stone)
                     .then(() => {
                         this._placement_buffer.remove(stone);
-                        if (this._placement_buffer.size == 0) {
-                            resolve();
-                        }
                     });
             });
-            resolve();
+            resolve(placed);
         });
     }
     
     /**
-     * @returns An iterable of changed region coordinates in the form {x0:a, y0:b x1:c, y1:d}.
+     * @returns An iterable of changed region coordinates in the form {x0:a, y0:b, x1:c, y1:d}.
      * Note that x0, y0, x1, and y1 are considered to be inside the changed region.
      */
     async process() {
-        await this.process_placements();
+        let placements = await this.process_placements();
         await this.process_captures();
         // don't need to notify clients of unplaced stones,
         //   server will notify of processing tick
@@ -150,17 +163,60 @@ class Goban {
         //          this means that clients only waiting on viewport updates, not attempted stone
         //          placements won't get unneeded packets
         //
-        // However, server must know about changed viewports...
-        //   could track viewports here, notify server when needed...
-        //      viewports tracked in two places though, not efficient
-        //   could notify server of all changes,
-        //      server would need to filter through them somehow...
-        //   could notify server of changed regions -- probably the best option
-        //      server would need to update all viewports overlapping those regions
-        //      need to define region somehow
-        return;
+            
+        let region = (x, y) => {
+            let x0 = x * this._region_size;
+            let y0 = y * this._region_size;
+            return {x0: x0,
+                    y0: y0,
+                    x1: x0+this._region_size-1,
+                    y1: y0+this._region_size-1
+            };
+        }
+
+        let r = new Array();
+        for (let i of placements) {
+            for (let j of i[1]) {
+                r.push(region(i[0], j[0]));
+            }
+        }
+
+        let it = {
+            next: function() {
+                if (!this._iter_x) {
+                    return {done: true};
+                }
+                if (!this._iter_y) {
+                    this._xr =  this._iter_x.next();
+                    if (this._xr.done) {
+                        return {done: true};
+                    }
+                    this._iter_y = this._xr.value[1][Symbol.iterator]();
+                }
+                let yr = this._iter_y.next();
+                if (yr.done) {
+                    this._xr = this._iter_x.next();
+                    if (this._xr.done) {
+                        return {done: true};
+                    }
+                    this._iter_y = this._xr.value[1][Symbol.iterator]();
+                    yr = this._iter_y.next();
+                }
+                let x = this._xr.value[0];
+                let y = yr.value[0];
+                return {done: false, value: region(x, y)};
+            },
+            [Symbol.iterator]: function() {return this;}
+        };
+        if (placements) {
+            it._iter_x = placements[Symbol.iterator]();
+        }
+        return r;
     }
 
+    /**
+     * @returns the number of captures in the form ret[x][y] = num_captures
+     */
     async process_captures() {
         // retrieve list of stones considered unprocessed/processing
         // for each stone to be processed:
