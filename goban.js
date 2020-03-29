@@ -118,11 +118,14 @@ class Goban {
     }
 
     async retrieve(rect) {
+        return await this.stones.get_by_rect(rect);
+        // make sure to prevent retrieval of incomplete state...
+        //   if currently executing process call, wait to retrieve
     }
 
     /**
-     * @returns the number of placements as a Map of the x coords to a Map of
-     * the y coords to the number of placements
+     * @returns the number of placements as a Map of the x region coords to a Map of
+     * the y region coords to the number of placements
      */
     process_placements() {
         return new Promise((resolve, reject) => {

@@ -56,7 +56,7 @@ class MockStones {
             resolve(stones);
         });
     }
-
+    /*
     get_unprocessed_for_processing() {
         return new Promise((resolve, reject) => {
             if (this.reject_from_get_unprocessed_for_processing) {
@@ -76,7 +76,7 @@ class MockStones {
             }
             resolve();
         });
-    }
+    }*/
 
     delete_by_point(point) {
         this.delete_by_point_calls.push(point);
@@ -226,7 +226,7 @@ describe('Goban (backend)', () => {
                 });
             });
             describe('region_size: 3', async function() {
-                it('dbg placed: [[-2, -2], [-2, -1], [0, 0], [2, 3], [3, 2], [5, 5]]', async function() {
+                it('placed: [[-2, -2], [-2, -1], [0, 0], [2, 3], [3, 2], [5, 5]]', async function() {
                     let goban = new Goban(stones, 3);
                     await goban.place({x: -2, y: -2, color: 'black'});
                     await goban.place({x: -2, y: -1, color: 'black'});
@@ -264,7 +264,50 @@ describe('Goban (backend)', () => {
         });
     });
 
-    //retrieve_stones calls get_by_rect
+    describe('#retrieve', () => {
+        beforeEach(() => {
+            stones.stone_list = [
+                {x: 0, y: 0, color: 'black'},
+                {x: -1, y: 0, color: 'black'},
+                {x: 0, y: 1, color: 'white'},
+                {x: 3, y: -1, color: 'black'},
+                {x: 7, y: 9, color: 'white'},
+                {x: -40, y: 3, color: 'white'},
+                {x: -5, y: 3, color: 'black'},
+                {x: -6, y: -7, color: 'black'},
+                {x: -1, y: -1, color: 'black'},
+                {x: -2, y: 4, color: 'black'},
+                {x: -6, y: 2, color: 'black'},
+                {x: 1, y: 1, color: 'black'}
+            ];
+        });
+        it('retrieve x0:-5, y0:0, x1:0, y1:3', async function() {
+            let retrieved = await goban.retrieve({x0: -5, y0: 0, x1: 0, y1: 3});
+            let expected = [
+                {x: -5, y: 3, color: 'black'},
+                {x: 0, y: 0, color: 'black'},
+                {x: -1, y: 0, color: 'black'},
+                {x: 0, y: 1, color: 'white'}
+            ];
+            for (let stone of retrieved) {
+                let found = false;
+                for (let i = 0;  i < expected.length; i++) {
+                    if (expected[i].x == stone.x &&
+                        expected[i].y == stone.y &&
+                        expected[i].color == stone.color) {
+                        found = true;
+                        expected.splice(i, 1);
+                    }
+                }
+                assert(found);
+            }
+            assert.equal(expected.length, 0);
+        });
+    });
+
+    //retrieve waits until process call complete
+    
+    //process waits until retrieve calls complete
 
     //process_captures calls stones.get_unprocessed_for_processing (implicit)
     //
