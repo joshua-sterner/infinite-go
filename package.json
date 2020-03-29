@@ -17,16 +17,16 @@
   },
   "homepage": "https://infinitego.net",
   "dependencies": {
-    "bcrypt": "^3.0.6",
+    "bcrypt": "^3.0.8",
     "ejs": "^3.0.1",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
-    "passport": "^0.4.0",
+    "passport": "^0.4.1",
     "passport-local": "^1.0.0",
-    "pg": "^7.12.1"
+    "pg": "^7.18.2"
   },
   "devDependencies": {
-    "mocha": "^6.2.2",
+    "mocha": "^6.2.3",
     "supertest": "^4.0.2"
   }
 }
