@@ -77,9 +77,14 @@ class Server {
         });
         app.post('/login', (req, res, next) => {
             passport.authenticate('local', (err, user, info) => {
-                //TODO 500 if server error in authentication attempt
-                if (err || !user) {
-                    return res.status(403).render('login', { authentication_failed: true});
+                if (err) {
+                    if (err.message == "Invalid password") {
+                        return res.status(403).render('login', {authentication_failed: true});
+                    }
+                    return res.status(500).render('login', {authentication_failed: false});
+                }
+                if (!user) {
+                    return res.status(403).render('login', {authentication_failed: true});
                 }
                 req.logIn(user, (err) => {
                     return res.redirect(302, '/');

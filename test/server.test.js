@@ -206,6 +206,15 @@ describe('Server', () => {
                 .expect(302)
                 .expect('Location', '/', done);
         });
+        it('when db error occurs returns HTTP 500', (done) => {
+            users.pass_error_from_get_by_username(true);
+            users.pass_error_from_get_by_email(true);
+            request(server.app)
+                .post('/login')
+                .type('form')
+                .send({'username':users.user_1.username, 'password':users.user_1.unencrypted_password})
+                .expect(500, done);
+        });
     });
 
     describe('GET /register', () => {
