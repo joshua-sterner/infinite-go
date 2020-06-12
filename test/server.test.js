@@ -116,6 +116,16 @@ class MockUsers {
             return resolve(null);
         });
     }
+
+    async username_taken(username) {
+        const user = await this.get_by_username(username);
+        return (user !== null);
+    }
+
+    async email_taken(email) {
+        const user = await this.get_by_email(email);
+        return (user !== null);
+    }
 }
 
 describe('Server', () => {

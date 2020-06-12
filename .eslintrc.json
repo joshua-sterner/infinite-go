@@ -32,7 +32,8 @@
         "semi": [
             "error",
             "always"
-        ]
+        ],
+        "jsdoc/no-undefined-types": "off"
     },
     "ignorePatterns": ["out/"]
 }

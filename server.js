@@ -1,3 +1,8 @@
+/**
+ * Infinite Go Server
+ *
+ * @module server
+ */
 const express = require('express');
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local').Strategy;
@@ -6,7 +11,10 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
 /**
- * @param users
+ * Creates a Passport instance for the server.
+ *
+ * @param {Users} users - The Users instance to authenticate users with.
+ * @returns {Passport} A new Passport instance that authenticates users via the provided Users instance.
  */
 function setup_passport(users) {
     let passport = new Passport();
@@ -40,8 +48,11 @@ function setup_passport(users) {
 }
 
 /**
- * @param passport
- * @param session_secret
+ * Creates an express instance for the server.
+ *
+ * @param {Passport} passport - The Passport object used for handling authentication.
+ * @param {string} session_secret - The session secret.
+ * @returns {express} The express object used by the server.
  */
 function setup_express(passport, session_secret) {
     let app = express();
@@ -58,14 +69,23 @@ function setup_express(passport, session_secret) {
  * @class
  */
 class Server {
+    
+    #users;
+    #passport;
 
     /**
      * Constructs a new Infinite Go server instance.
      *
      * @class
+     * @param {object} args - The info required to construct a new Server instance.
      * @param {Users} args.users - The Users instance that provides acesss to user accounts.
-     * @param args
-     * @param {GobanRegion} args.default_viewport - The default viewport assigned to new users.
+     * @param {string} args.secret - The session secret.
+     * @param {object} args.default_viewport - The default viewport assigned to new users.
+     * The x axis is positive to the right, and the y axis is positive to the top.
+     * @param {number} args.default_viewport.top - The y position of the top of the viewport.
+     * @param {number} args.default_viewport.bottom - The y position of the bottom of the viewport.
+     * @param {number} args.default_viewport.left - The x position of the left of the viewport.
+     * @param {number} args.default_viewport.right - The x position of the right of the viewport.
      */
     constructor(args) {
 
@@ -73,8 +93,12 @@ class Server {
             throw new Error('invalid call to constructor');
         }
 
+        this.default_viewport = args.default_viewport;
+
         const users = args.users;
         const passport = setup_passport(users);
+        this.#users = users;
+        this.#passport = passport;
 
         const app = setup_express(passport, args.session_secret);
         this.app = app;
@@ -95,20 +119,7 @@ class Server {
             res.status(200).render('login', {authentication_failed: false});
         });
         app.post('/login', (req, res) => {
-            passport.authenticate('local', (err, user) => {
-                if (err) {
-                    if (err.message == 'Invalid password') {
-                        return res.status(403).render('login', {authentication_failed: true});
-                    }
-                    return res.status(500).render('login', {authentication_failed: false});
-                }
-                if (!user) {
-                    return res.status(403).render('login', {authentication_failed: true});
-                }
-                req.logIn(user, () => {
-                    return res.redirect(302, '/');
-                });
-            })(req, res);
+            this._handle_login_request(req, res);
         });
         app.get('/logout', (req, res) => {
             req.logout();
@@ -118,50 +129,56 @@ class Server {
             res.status(200).render('registration');
         });
 
-
-        /**
-         * @param username
-         */
-        async function is_username_taken(username) {
-            const user = await users.get_by_username(username);
-            return (user !== null);
-        }
-
-        /**
-         * @param email
-         */
-        async function is_email_taken(email) {
-            const user = await users.get_by_email(email);
-            return (user !== null);
-        }
-
-        app.post('/register', async function (req, res) {
-            if (!req.body.username || !req.body.email || !req.body.password) {
-                return res.status(400).send('Username, password and email are required.');
-            }
-            if (req.body.username.length > users.MAX_USERNAME_LENGTH) {
-                return res.status(400).send(`Username exceeds character limit of ${users.MAX_USERNAME_LENGTH}.`);
-            }
-            
-            try {
-                if (await is_username_taken(req.body.username)) {
-                    return res.status(400).send('Username taken');
-                }
-
-                if (await is_email_taken(req.body.email)) {
-                    return res.status(400).send('Email taken');
-                }
-                let encrypted_password = await bcrypt.hash(req.body.password, 10);
-                let new_user = {username:req.body.username, password:encrypted_password, email:req.body.email, viewport:args.default_viewport};
-                const id = await users.create(new_user);
-                new_user.id = id;
-                req.logIn(new_user, () => {
-                    return res.redirect(302, '/');
-                });
-            } catch {
-                return res.status(500).send('Database Error');
-            }
+        app.post('/register', (req, res) => {
+            this._handle_register_request(req, res);
         });
+    }
+    
+    async _handle_register_request(req, res) {
+        if (!req.body.username || !req.body.email || !req.body.password) {
+            return res.status(400).send('Username, password and email are required.');
+        }
+        if (req.body.username.length > this.#users.MAX_USERNAME_LENGTH) {
+            return res.status(400).send(`Username exceeds character limit of ${this.#users.MAX_USERNAME_LENGTH}.`);
+        }
+        
+        try {
+            if (await this.#users.username_taken(req.body.username)) {
+                return res.status(400).send('Username taken');
+            }
+
+            if (await this.#users.email_taken(req.body.email)) {
+                return res.status(400).send('Email taken');
+            }
+            let encrypted_password = await bcrypt.hash(req.body.password, 10);
+            let new_user = {username:req.body.username, password:encrypted_password,
+                            email:req.body.email, viewport:this.default_viewport};
+            const id = await this.#users.create(new_user);
+            new_user.id = id;
+            req.logIn(new_user, () => {
+                return res.redirect(302, '/');
+            });
+        } catch (e) {
+            console.log(`Caught: ${e}`);
+            return res.status(500).send('Database Error');
+        }
+    }
+
+    _handle_login_request(req, res) {
+        this.#passport.authenticate('local', (err, user) => {
+            if (err) {
+                if (err.message == 'Invalid password') {
+                    return res.status(403).render('login', {authentication_failed: true});
+                }
+                return res.status(500).render('login', {authentication_failed: false});
+            }
+            if (!user) {
+                return res.status(403).render('login', {authentication_failed: true});
+            }
+            req.logIn(user, () => {
+                return res.redirect(302, '/');
+            });
+        })(req, res);
     }
 }
 
