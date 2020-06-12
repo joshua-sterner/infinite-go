@@ -1,0 +1,5 @@
+{
+    "source": {
+        "include": ["README.md", "package.json", "."]
+    }
+}

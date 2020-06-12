@@ -11,16 +11,19 @@ goban.stones = [
     {color:'black', position:{x:0, y:0}},
     {color:'black', position:{x:1, y:0}},
     {color:'black', position:{x:0, y:1}},
-]
+];
 window.addEventListener('resize', () => goban.resize());
 window.addEventListener('load', () => {
-    goban.resize()
+    goban.resize();
     const panel = document.getElementById('panel');
     if (CSS.supports('backdrop-filter', 'blur(1px)')) {
         panel.classList.add('panel-backdrop-filter');
     }
 });
 
+/**
+ *
+ */
 function open_panel() {
     const panel_icon = document.getElementById('panel-icon');
     const panel = document.getElementById('panel');
@@ -29,6 +32,9 @@ function open_panel() {
     goban.resize();
 }
 
+/**
+ *
+ */
 function close_panel() {
     const panel_icon = document.getElementById('panel-icon');
     const panel = document.getElementById('panel');
@@ -37,10 +43,13 @@ function close_panel() {
     goban.resize();
 }
 
+/**
+ * @param color
+ */
 function change_team(color) {
     const white_team_button = document.getElementById('white-team-button');
     const black_team_button = document.getElementById('black-team-button');
-    team_indicator = document.getElementById('team-indicator');
+    let team_indicator = document.getElementById('team-indicator');
     if (color == 'white') {
         white_team_button.classList.add('active-team-button');
         black_team_button.classList.remove('active-team-button');

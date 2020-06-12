@@ -5,9 +5,11 @@ const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 
-
+/**
+ * @param users
+ */
 function setup_passport(users) {
-    passport = new Passport();
+    let passport = new Passport();
 
     passport.use(new LocalStrategy((username, password, done) => {
         users.get_by_username(username)
@@ -19,7 +21,7 @@ function setup_passport(users) {
                     if (res) {
                         return done(null, user);
                     }
-                    return done(new Error("Invalid password"), null);
+                    return done(new Error('Invalid password'), null);
                 });
             }).catch(err => done(err, null));
     }));
@@ -37,6 +39,10 @@ function setup_passport(users) {
     return passport;
 }
 
+/**
+ * @param passport
+ * @param session_secret
+ */
 function setup_express(passport, session_secret) {
     let app = express();
     app.use(bodyParser.urlencoded({extended: false}));
@@ -46,8 +52,21 @@ function setup_express(passport, session_secret) {
     return app;
 }
 
+/**
+ * Infinite-Go Server Instance.
+ *
+ * @class
+ */
 class Server {
 
+    /**
+     * Constructs a new Infinite Go server instance.
+     *
+     * @class
+     * @param {Users} args.users - The Users instance that provides acesss to user accounts.
+     * @param args
+     * @param {GobanRegion} args.default_viewport - The default viewport assigned to new users.
+     */
     constructor(args) {
 
         if (!args.users || !args.session_secret || !args.default_viewport) {
@@ -75,10 +94,10 @@ class Server {
         app.get('/login', (req, res) => {
             res.status(200).render('login', {authentication_failed: false});
         });
-        app.post('/login', (req, res, next) => {
-            passport.authenticate('local', (err, user, info) => {
+        app.post('/login', (req, res) => {
+            passport.authenticate('local', (err, user) => {
                 if (err) {
-                    if (err.message == "Invalid password") {
+                    if (err.message == 'Invalid password') {
                         return res.status(403).render('login', {authentication_failed: true});
                     }
                     return res.status(500).render('login', {authentication_failed: false});
@@ -86,31 +105,37 @@ class Server {
                 if (!user) {
                     return res.status(403).render('login', {authentication_failed: true});
                 }
-                req.logIn(user, (err) => {
+                req.logIn(user, () => {
                     return res.redirect(302, '/');
                 });
             })(req, res);
         });
-        app.get('/logout', (req, res, next) => {
+        app.get('/logout', (req, res) => {
             req.logout();
             return res.redirect(302, '/login');
         });
-        app.get('/register', (req, res, next) => {
+        app.get('/register', (req, res) => {
             res.status(200).render('registration');
         });
 
 
+        /**
+         * @param username
+         */
         async function is_username_taken(username) {
             const user = await users.get_by_username(username);
             return (user !== null);
         }
 
+        /**
+         * @param email
+         */
         async function is_email_taken(email) {
             const user = await users.get_by_email(email);
             return (user !== null);
         }
 
-        app.post('/register', async function (req, res, next) {
+        app.post('/register', async function (req, res) {
             if (!req.body.username || !req.body.email || !req.body.password) {
                 return res.status(400).send('Username, password and email are required.');
             }
@@ -130,7 +155,7 @@ class Server {
                 let new_user = {username:req.body.username, password:encrypted_password, email:req.body.email, viewport:args.default_viewport};
                 const id = await users.create(new_user);
                 new_user.id = id;
-                req.logIn(new_user, (err) => {
+                req.logIn(new_user, () => {
                     return res.redirect(302, '/');
                 });
             } catch {

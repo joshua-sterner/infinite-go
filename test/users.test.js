@@ -18,7 +18,7 @@ const test_user_1 = {
         'bottom': 12,
         'left': 13
     }
-}
+};
 const test_user_2 = {
     'id': 2,
     'username': 'second_test_user',
@@ -31,8 +31,12 @@ const test_user_2 = {
         'bottom': -6,
         'left': -11
     }
-}
+};
 
+/**
+ * @param lhs
+ * @param rhs
+ */
 function users_equal(lhs, rhs) {
     return lhs.id === rhs.id &&
         lhs.username === rhs.username &&
@@ -44,14 +48,6 @@ function users_equal(lhs, rhs) {
         lhs.viewport.right === rhs.viewport.right &&
         lhs.viewport.bottom === rhs.viewport.bottom &&
         lhs.viewport.left === rhs.viewport.left;
-}
-
-
-function expect_error_from_callback(obj, done) {
-    if (obj instanceof Error) {
-        return done();
-    }
-    return done('Did not pass Error to callback.');
 }
 
 describe('Users', () => {
@@ -138,6 +134,7 @@ describe('Users', () => {
         it('successfully creates user with custom id', async function() {
             const id = await users.create(test_user);
             const user = await users.get_by_id(test_user.id);
+            assert(id === test_user.id);
             assert(users_equal(user, test_user));
         });
         it('successful creation of user with custom id returns provided id', async function() {
@@ -151,6 +148,7 @@ describe('Users', () => {
             const id = await users.create(test_user);
             const user = await users.get_by_username(test_user.username);
             test_user.id = user.id;
+            assert(id === user.id);
             assert(users_equal(user, test_user));
         });
         it('successful creation of user without supplied id returns correct id', async function() {
@@ -224,8 +222,8 @@ describe('Users', () => {
             });
         });
         ['username', 'email', 'password', 'viewport',
-        'viewport.top', 'viewport.right', 'viewport.left',
-        'viewport.bottom'].forEach((field) => {
+            'viewport.top', 'viewport.right', 'viewport.left',
+            'viewport.bottom'].forEach((field) => {
             it(`rejects when ${field} not provided`, async function() {
                 eval('delete test_user.'+field);
                 await assert.rejects(async function() {
@@ -264,8 +262,8 @@ describe('Users', () => {
             assert(users_equal(test_user, user));
         });
         ['id', 'username', 'email', 'password', 'date_created', 'viewport',
-        'viewport.top', 'viewport.right', 'viewport.left',
-        'viewport.bottom'].forEach((field) => {
+            'viewport.top', 'viewport.right', 'viewport.left',
+            'viewport.bottom'].forEach((field) => {
             it(`rejects when ${field} not provided`,  async function() {
                 eval('delete test_user.'+field);
                 await assert.rejects(async function() {

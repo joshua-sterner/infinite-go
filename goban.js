@@ -59,7 +59,7 @@ class Goban {
     /**
      * Creates a Goban instance.
      *
-     * @constructor
+     * @class
      * @param stones An object that saves stones (probably in a db).
      * @param region_size the size of the square regions in which changes are tracked.
      */
@@ -128,7 +128,7 @@ class Goban {
      * the y region coords to the number of placements
      */
     process_placements() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             let placed = new Map();
             this._placement_buffer.forEach((stone) => {
                 let region_x = Math.floor(stone.x / this._region_size);
@@ -153,7 +153,7 @@ class Goban {
     }
     
     /**
-     * @returns An iterable of changed region coordinates in the form {x0:a, y0:b, x1:c, y1:d}.
+     * @returns An iterable of changed region coordinates in the form {{x0: number, y0: number, x1: number, y1: number}}.
      * Note that x0, y0, x1, and y1 are considered to be inside the changed region.
      */
     async process() {
@@ -171,11 +171,11 @@ class Goban {
             let x0 = x * this._region_size;
             let y0 = y * this._region_size;
             return {x0: x0,
-                    y0: y0,
-                    x1: x0+this._region_size-1,
-                    y1: y0+this._region_size-1
+                y0: y0,
+                x1: x0+this._region_size-1,
+                y1: y0+this._region_size-1
             };
-        }
+        };
 
         let r = new Array();
         for (let i of placements) {

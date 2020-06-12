@@ -11,7 +11,7 @@ class MockWindow {
         this.num_request_animation_frame_calls = 0;
     }
 
-    requestAnimationFrame(cb) {
+    requestAnimationFrame() {
         this.num_request_animation_frame_calls += 1;
     }
 }
@@ -20,7 +20,7 @@ class MockWindow {
 //  specific code to the front-end code.
 const Goban = function() {
     let goban_class;
-    eval(fs.readFileSync('static/goban.js').toString() + "; goban_class = Goban;");
+    eval(fs.readFileSync('static/goban.js').toString() + '; goban_class = Goban;');
     return goban_class;
 }();
 
@@ -32,7 +32,7 @@ class MockContext {
         this.scale_calls.push({x: x, y: y});
     }
     reset() {
-        this.scale_calls = []
+        this.scale_calls = [];
     }
 }
 

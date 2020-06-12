@@ -3,7 +3,6 @@ const db = require('./test_db.js');
 const assert = require('assert');
 const Stones = require('../stones.js').Stones;
 const timestamps_equal = require('./util.js').timestamps_equal;
-const util = require('util');
 
 const test_stone_1 = {
     x: 12,
@@ -41,6 +40,10 @@ const test_stone_4 = {
     processed: 'processing'
 };
 
+/**
+ * @param lhs
+ * @param rhs
+ */
 function stones_equal(lhs, rhs) {
     return lhs.x === rhs.x &&
         lhs.y === rhs.y &&
@@ -50,6 +53,10 @@ function stones_equal(lhs, rhs) {
         lhs.processed === rhs.processed;
 }
 
+/**
+ * @param stone
+ * @param list
+ */
 function stone_in_list(stone, list) {
     return list.some((stone2) => {
         return stones_equal(stone, stone2);
@@ -83,9 +90,9 @@ describe('Stones', () => {
             assert.deepStrictEqual(stone_list, [test_stone_2]);
         });
         [{x0: -12, y0: -34, x1: 12, y1: 34},
-         {x0: 12, y0: -34, x1: -12, y1: 34},
-         {x0: -12, y0: 34, x1: 12, y1: -34},
-         {x0: 12, y0: 34, x1: -12, y1: -34}].forEach((rect) => {
+            {x0: 12, y0: -34, x1: -12, y1: 34},
+            {x0: -12, y0: 34, x1: 12, y1: -34},
+            {x0: 12, y0: 34, x1: -12, y1: -34}].forEach((rect) => {
             it(`get_by_rect({x0: ${rect.x0}, y0: ${rect.y0}, x1: ${rect.x1}, y1: ${rect.y1}}) resolves to stones in rect`, async function() {
                 const stone_list = await(stones.get_by_rect(rect));
                 assert.equal(stone_list.length, 2);

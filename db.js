@@ -1,10 +1,14 @@
-const fs = require('fs');
 const {Pool, Client} = require('pg');
 
 //TODO Test this...
 
+/**
+ * Creates a postgres connection url from the database connection setttings.
+ *
+ * @param db_connection_settings
+ */
 function make_connection_url(db_connection_settings) {
-    let url = 'postgresql://'
+    let url = 'postgresql://';
     if (db_connection_settings.user) { 
         url += db_connection_settings.user;
     }
@@ -24,7 +28,7 @@ function make_connection_url(db_connection_settings) {
     return url;
 }
 
-module.exports = {}
+module.exports = {};
 module.exports.Pool = Pool;
 module.exports.Client = Client;
 module.exports.make_connection_url = make_connection_url;

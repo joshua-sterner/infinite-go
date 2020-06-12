@@ -15,7 +15,7 @@ const test_user_1 = {
         'bottom': 12,
         'left': 13
     }
-}
+};
 const test_user_2 = {
     'id': 2,
     'username': 'second_user',
@@ -29,14 +29,14 @@ const test_user_2 = {
         'bottom': -6,
         'left': -11
     }
-}
+};
 
 class MockUsers {
     constructor() {
         this.MAX_USERNAME_LENGTH = 127;
         this.user_1 = test_user_1;
         this.user_2 = test_user_2;
-        this.users_passed_to_create = []
+        this.users_passed_to_create = [];
     }
 
     create(user) {
@@ -88,7 +88,7 @@ class MockUsers {
     }
 
     get_by_id(id) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             if (id == 1) {
                 return resolve(this.user_1);
             }
@@ -125,13 +125,13 @@ describe('Server', () => {
     const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
     beforeEach(() => {
         users = new MockUsers();
-        server = new Server({users:users, session_secret:"test session secret", default_viewport:default_viewport});
+        server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport});
     });
 
     describe('Server Constructor', () => {
         it('throws when called without users object', () => {
             assert.throws(() => {
-                new Server({session_secret:"test session secret",
+                new Server({session_secret:'test session secret',
                     default_viewport:default_viewport});
             });
         });
@@ -142,7 +142,7 @@ describe('Server', () => {
         });
         it('throws when called without default_viewport', () => {
             assert.throws(() => {
-                new Server({users:users, session_secret:"test session secret"});
+                new Server({users:users, session_secret:'test session secret'});
             });
         });
     });
@@ -153,7 +153,7 @@ describe('Server', () => {
             .post('/login')
             .type('form')
             .send({'username':user.username, 'password':user.unencrypted_password})
-            .end((err, res) => {
+            .end((err) => {
                 cb(err, agent);
             });
     };
@@ -251,7 +251,7 @@ describe('Server', () => {
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
-                .end((err, res) => {
+                .end(() => {
                     const created_users = users.users_passed_to_create;
                     if (created_users.length != 1) {
                         return done(`registration created ${created_users.length} users`);
@@ -264,7 +264,7 @@ describe('Server', () => {
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
-                .end((err, res) => {
+                .end(() => {
                     const user = users.users_passed_to_create[0];
                     if (user.username == 'new_user') {
                         return done();
@@ -277,7 +277,7 @@ describe('Server', () => {
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
-                .end((err, res) => {
+                .end(() => {
                     const user = users.users_passed_to_create[0];
                     if (user.email == 'new@user.com') {
                         return done();
@@ -290,7 +290,7 @@ describe('Server', () => {
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
-                .end((err, res) => {
+                .end(() => {
                     const user = users.users_passed_to_create[0];
                     if (user.viewport &&
                         user.viewport.top == default_viewport.top &&
@@ -307,7 +307,7 @@ describe('Server', () => {
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
-                .end((err, res) => {
+                .end(() => {
                     const user = users.users_passed_to_create[0];
                     if (user.password.substr(0,4) != '$2b$') {
                         return done(new Error('password not stored as valid bcrypt string'));
@@ -323,7 +323,7 @@ describe('Server', () => {
                 });
         });
         it('returns HTTP 302 to / when username is max length', (done) => {
-            username = 'a'.repeat(users.MAX_USERNAME_LENGTH)
+            let username = 'a'.repeat(users.MAX_USERNAME_LENGTH);
             request(server.app)
                 .post('/register')
                 .type('form')
@@ -332,7 +332,7 @@ describe('Server', () => {
                 .expect('Location', '/', done);
         });
         it('returns HTTP 400 when username one character too long', (done) => {
-            username = 'a'.repeat(users.MAX_USERNAME_LENGTH+1)
+            let username = 'a'.repeat(users.MAX_USERNAME_LENGTH+1);
             request(server.app)
                 .post('/register')
                 .type('form')
@@ -413,8 +413,8 @@ describe('Server', () => {
         it('returns HTTP 302 to /login when previously authenticated', (done) => {
             make_authenticated_agent(users.user_1, (err, agent) => {
                 agent.get('/logout')
-                .expect(302)
-                .expect('Location', '/login', done);
+                    .expect(302)
+                    .expect('Location', '/login', done);
             });
         });
         it('returns HTTP 302 to /login when not previously authenticated', (done) => {
@@ -426,10 +426,10 @@ describe('Server', () => {
         it('deauths active session', (done) => {
             make_authenticated_agent(users.user_1, (err, agent) => {
                 agent.get('/logout')
-                    .end((err, res) => {
+                    .end(() => {
                         agent.get('/')
-                        .expect(302)
-                        .expect('Location', '/login', done);
+                            .expect(302)
+                            .expect('Location', '/login', done);
                     });
             });
         });

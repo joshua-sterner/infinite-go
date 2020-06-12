@@ -1,3 +1,6 @@
+/**
+ * @param db_user
+ */
 function db_user_to_user(db_user) {
     var user = {};
     user.id = db_user.id;
@@ -35,7 +38,7 @@ class Users {
             if (user.id) {
                 this.db_connection_pool
                     .query('INSERT INTO users (id, username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [user.id, user.username, user.email, user.password, date_created, user.viewport.top, user.viewport.right, user.viewport.bottom, user.viewport.left])
-                    .then((res) => {
+                    .then(() => {
                         return resolve(user.id);
                     })
                     .catch(err => reject(err));
@@ -58,7 +61,7 @@ class Users {
                     if (res.rows.length == 0) {
                         return resolve(null);
                     }
-                   resolve(db_user_to_user(res.rows[0]));
+                    resolve(db_user_to_user(res.rows[0]));
                 })
                 .catch(err => reject(err));
         });

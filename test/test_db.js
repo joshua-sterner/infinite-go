@@ -4,12 +4,15 @@ const {Pool, Client} = require('pg');
 // Connection information for the test database.
 // Valid fields: user, host, database, password, port.
 // Omission of a field will result in the use of the default value for that field.
-db_connection_settings_filename = 'test/test_db_connection.json'
+db_connection_settings_filename = 'test/test_db_connection.json';
 
 const db_connection_settings = JSON.parse(fs.readFileSync(db_connection_settings_filename));
 
+/**
+ * @param db_connection_settings
+ */
 function make_db_connection_url(db_connection_settings) {
-    let url = 'postgresql://'
+    let url = 'postgresql://';
     if (db_connection_settings.user) { 
         url += db_connection_settings.user;
     }
@@ -42,9 +45,9 @@ mock_throwing_db_connection_pool.query = () => {
         const callback = arguments[arguments.length-1];
         callback(err, null);
     }
-}
+};
 
-module.exports = {}
+module.exports = {};
 module.exports.Pool = Pool;
 module.exports.Client = Client;
 module.exports.connection_settings = db_connection_settings;

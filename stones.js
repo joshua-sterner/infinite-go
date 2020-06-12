@@ -13,7 +13,7 @@ class Stones {
             }
             this.db_connection_pool
                 .query('INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES ($1, $2, $3, $4, $5, $6)', [stone.x, stone.y, stone.placed_by, date_placed, stone.color, processed])
-                .then((res) => {
+                .then(() => {
                     return resolve();
                 })
                 .catch(err => reject(err));
@@ -53,7 +53,7 @@ class Stones {
         return new Promise((resolve, reject) => {
             this.db_connection_pool
                 .query('UPDATE stones SET processed=\'processed\' WHERE processed=\'processing\'')
-                .then((res) => {
+                .then(() => {
                     resolve();
                 })
                 .catch(err => reject(err));

@@ -103,7 +103,7 @@ describe('Goban (backend)', () => {
             const color = 'black';
             const opponent_color = 'white';
             describe(`place ${color} stone @ (${point.x}, ${point.y})`, () => {
-                it(`with no adjacent stones`, async function() {
+                it('with no adjacent stones', async function() {
                     const stone = {x: point.x, y: point.y, color: 'black'};
                     await goban.place(stone);
                     await goban.process_placements();
@@ -172,12 +172,12 @@ describe('Goban (backend)', () => {
         });
         it('throws when provided region size is 0', () => {
             assert.throws(() => {
-                let goban = new Goban(stones, 0);
+                new Goban(stones, 0);
             });
         });
         it('throws when provided region size is less than 0', () => {
             assert.throws(() => {
-                let goban = new Goban(stones, -1);
+                new Goban(stones, -1);
             });
         });
     });
@@ -190,8 +190,8 @@ describe('Goban (backend)', () => {
                     let goban = new Goban(stones, 1);
                     let empty = true;
                     let x = await goban.process();
-                    for (i of x) {
-                        empty = false;
+                    for (let i of x) {
+                        empty = false; //TODO what am I doing here?
                     }
                     assert(empty);
                 });
@@ -207,9 +207,8 @@ describe('Goban (backend)', () => {
                         {x0: -123, y0: 456, x1: -123, y1: 456}
                     ];
 
-                    let changed = [];
                     let process_result = await(goban.process());
-                    for (i of process_result) {
+                    for (let i of process_result) {
                         let found = false;
                         for (let j = 0; j < expected.length; j++) {
                             if (expected[j].x0 == i.x0 &&
@@ -243,9 +242,8 @@ describe('Goban (backend)', () => {
                         {x0: 3, y0: 3, x1: 5, y1: 5}
                     ];
 
-                    let changed = [];
                     let process_result = await(goban.process());
-                    for (i of process_result) {
+                    for (let i of process_result) {
                         let found = false;
                         for (let j = 0; j < expected.length; j++) {
                             if (expected[j].x0 == i.x0 &&

@@ -1,3 +1,7 @@
+/**
+ * @param lhs
+ * @param rhs
+ */
 function timestamps_equal(lhs, rhs) {
     const max_time_delta = 4; // milliseconds
     const ms_lhs = new Date(lhs).getTime();

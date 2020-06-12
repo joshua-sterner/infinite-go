@@ -17,7 +17,7 @@ class Goban {
         canvas.addEventListener('mousedown', (e) => this._handle_press(e.clientX, e.clientY));
         canvas.addEventListener('mouseup', (e) => this._handle_release(e.clientX, e.clientY));
         canvas.addEventListener('mousemove', (e) => this._handle_move(e.clientX, e.clientY));
-        canvas.addEventListener('mouseout', (e) => this._handle_out());
+        canvas.addEventListener('mouseout', () => this._handle_out());
 
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
