@@ -8,7 +8,7 @@
                 "viewport": {
                     "$ref": "https://infinitego.net/schemas/viewport.json"
                 },
-                "stones_in_viewport": {
+                "stones": {
                     "type": "array",
                     "items": {
                         "$ref": "https://infinitego.net/schemas/stone.json"
