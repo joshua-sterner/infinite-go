@@ -20,4 +20,4 @@ const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
 
 const server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport});
 
-server.app.listen(3000, () => console.log('Server running'));
+server.listen(3000, () => console.log('Server running'));

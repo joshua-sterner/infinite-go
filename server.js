@@ -9,6 +9,9 @@ const LocalStrategy = require('passport-local').Strategy;
 const session = require('express-session');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const http = require('http');
+const WebSocket = require('ws');
+const util = require('util');
 
 /**
  * Creates a Passport instance for the server.
@@ -52,15 +55,16 @@ function setup_passport(users) {
  *
  * @param {Passport} passport - The Passport object used for handling authentication.
  * @param {string} session_secret - The session secret.
- * @returns {express} The express object used by the server.
+ * @returns {object} The express object and the session parser.
  */
 function setup_express(passport, session_secret) {
     let app = express();
     app.use(bodyParser.urlencoded({extended: false}));
-    app.use(session({secret: session_secret, resave: false, saveUninitialized: false}));
+    let session_parser = session({secret: session_secret, resave: false, saveUninitialized: false});
+    app.use(session_parser);
     app.use(passport.initialize());
     app.use(passport.session());
-    return app;
+    return {app: app, session_parser: session_parser};
 }
 
 /**
@@ -72,6 +76,8 @@ class Server {
     
     #users;
     #passport;
+    #http_server;
+    #wss
 
     /**
      * Constructs a new Infinite Go server instance.
@@ -100,8 +106,39 @@ class Server {
         this.#users = users;
         this.#passport = passport;
 
-        const app = setup_express(passport, args.session_secret);
+        const {app, session_parser} = setup_express(passport, args.session_secret);
         this.app = app;
+        this.#http_server = http.createServer(app);
+
+        this.#wss = new WebSocket.Server({clientTracking: false, noServer: true});
+
+        this.#http_server.on('upgrade', (req, socket, head) => {
+            session_parser(req, {}, () => {
+                if (!req.session.passport || !req.session.passport.user) {
+                    socket.destroy();
+                    return;
+                }
+                this.#wss.handleUpgrade(req, socket, head, (ws) => {
+                    this.#wss.emit('connection', ws, req);
+                });
+            });
+        });
+
+        this.#wss.on('connection', (ws, req) => {
+            let user_id = req.session.passport.user;
+            ws.on('message', (message) => {
+                let msg = JSON.parse(message);
+                if (msg.type == 'stone_placement_request') {
+                    setTimeout(() => {
+                        // TODO where should this confirmation actually happen?
+                        ws.send(JSON.stringify({
+                            type: "stone_placement_request_approved",
+                            stones: [msg.stone]
+                        }));
+                    }, 1500);
+                }
+            });
+        });
 
         //TODO enable/disable switch for static file serving
         app.use(express.static('static'));
@@ -179,6 +216,10 @@ class Server {
                 return res.redirect(302, '/');
             });
         })(req, res);
+    }
+
+    listen(port, cb) {
+        this.#http_server.listen(port, cb);
     }
 }
 

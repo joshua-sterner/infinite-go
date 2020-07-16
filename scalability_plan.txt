@@ -1,0 +1,14 @@
+Go board is split into blocks.
+Only one server instance can access a region at a time.
+sync server keeps track of which server instances have a lock on a particular region
+    Could probably run multiple block access servers if needed and rely on a majority rule
+Blocks can be stored in multiple databases
+sync server keeps track of block db synchronization
+
+Upon user connection to load-balancer
+    load-balancer requests user's viewport from sync server
+    load-balancer connects user to appropriate server instance
+
+Upon user connection to server instance
+    server requests lock on user from sync server
+    server periodically sends changes 

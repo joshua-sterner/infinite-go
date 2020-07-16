@@ -39,7 +39,11 @@ class InfiniteGoWebsocketClient {
 
         this._message_map = new Map();
         this._message_map.set('stone_placement_request_approved', (json) => {
-            goban.grant_stone_placement_request(json.stone);
+            json.stones.forEach((stone) => {
+                goban.grant_stone_placement_request(stone);
+            });
+            //TODO proper handling of multiple stone approvals?
+            //goban.grant_stone_placement_request(json.stone);
         });
         this._message_map.set('stone_placement_request_denied', (json) => {
             goban.deny_stone_placement_request(json.stone);
@@ -82,7 +86,6 @@ class InfiniteGoWebsocketClient {
         }
         ws.onmessage = (e) => {
             const json = JSON.parse(e.data);
-            console.log(json);
             if (json.type && this._message_map.has(json.type)) {
                 this._message_map.get(json.type)(json);
             }

@@ -19,6 +19,8 @@ window.addEventListener('load', () => {
     if (CSS.supports('backdrop-filter', 'blur(1px)')) {
         panel.classList.add('panel-backdrop-filter');
     }
+    let ws = new WebSocket(`ws://${location.host}`);
+    let igwsc = new InfiniteGoWebsocketClient(ws, goban)
 });
 
 /**

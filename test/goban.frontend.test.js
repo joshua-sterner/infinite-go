@@ -307,7 +307,7 @@ describe('Goban', () => {
                     goban._handle_press(i.press.x, i.press.y);
                     goban._handle_release(i.release.x, i.release.y);
                     assert(goban.unconfirmed_stone);
-                    const expected = {color: color, position: {x: i.grid.x, y: i.grid.y}};
+                    const expected = {color: color, position: {x: i.grid.x, y: i.grid.y}, unsynced: true};
                     assert.deepStrictEqual(goban.unconfirmed_stone, expected);
                 });
                 it(`tap with ${color} team selected on grid point with unconfirmed ${color} stone places ${color} stone`, () => {
@@ -388,10 +388,221 @@ describe('Goban', () => {
             assert.equal(window.num_request_animation_frame_calls, 1);
         });
     });
+
+    describe('on_stone_placement_request', () => {
+        it('callback is called when a stone placement request occurs', () => {
+            let cb_calls = 0;
+            goban.on_stone_placement_request(() => {
+                cb_calls++;
+            });
+            goban._handle_press(0, 0);
+            goban._handle_release(0, 0);
+            assert.equal(cb_calls, 0);
+            goban._handle_press(0, 0);
+            goban._handle_release(0, 0);
+            assert.equal(cb_calls, 1);
+        });
+        it('replaces previously set callback', () => {
+            let cb_calls = 0;
+            let cb2_calls = 0;
+            goban.on_stone_placement_request(() => {
+                cb_calls++;
+            });
+            goban.on_stone_placement_request(() => {
+                cb2_calls++;
+            });
+            goban._handle_press(0, 0);
+            goban._handle_release(0, 0);
+            assert.equal(cb_calls, 0);
+            assert.equal(cb2_calls, 0);
+            goban._handle_press(0, 0);
+            goban._handle_release(0, 0);
+            assert.equal(cb_calls, 0);
+            assert.equal(cb2_calls, 1);
+        });
+    });
+
+    describe('on_viewport_change', () => {
+        let grid_width;
+        let grid_height;
+        beforeEach(() => {
+            grid_width = goban._grid_width;
+            grid_height = goban._grid_width / goban._grid_ratio;
+            canvas.width = goban._grid_width;
+            canvas.height = goban._grid_width / goban._grid_ratio;
+            canvas.clientWidth = canvas.width;
+            canvas.clientHeight = canvas.height;
+            goban.resize();
+        });
+        it('called when viewport resized by one grid point in the x direction.', () => {
+            let cb_calls = [];
+            goban.on_viewport_change((viewport) => {
+                cb_calls.push(viewport);
+            });
+            canvas.clientWidth += grid_width;
+            goban.resize();
+            assert.equal(cb_calls.length, 1);
+            assert.deepStrictEqual(cb_calls[0], {
+                top: 0,
+                left: 0,
+                right: 2,
+                bottom: 1,
+            });
+        });
+        it('called when viewport resized by one grid point in the y direction.', () => {
+            let cb_calls = [];
+            goban.on_viewport_change((viewport) => {
+                cb_calls.push(viewport);
+            });
+            canvas.clientHeight += grid_height;
+            goban.resize();
+            assert.equal(cb_calls.length, 1);
+            assert.deepStrictEqual(cb_calls[0], {
+                top: 0,
+                left: 0,
+                right: 1,
+                bottom: 2,
+            });
+        });
+        it('not called when viewport resized by less than one grid point in the x direction.', () => {
+            let cb_calls = [];
+            goban.on_viewport_change((viewport) => {
+                cb_calls.push(viewport);
+            });
+            canvas.clientWidth += grid_width / 2 - 1;
+            goban.resize();
+            assert.equal(cb_calls.length, 0);
+        });
+        it('not called when viewport resized by less than one grid point in the y direction.', () => {
+            let cb_calls = [];
+            goban.on_viewport_change((viewport) => {
+                cb_calls.push(viewport);
+            });
+            canvas.clientHeight += grid_height / 2 - 1;
+            goban.resize();
+            assert.equal(cb_calls.length, 0);
+        });
+    });
+
+    describe('on_team_change', () => {
+        it('callback called when team changed', () => {
+            goban.change_team('black');
+            let cb_calls = [];
+            goban.on_team_change((team_color) => {
+                cb_calls.push(team_color);
+            });
+            goban.change_team('white');
+            goban.change_team('black');
+            assert.equal(cb_calls.length, 2);
+            assert.equal(cb_calls[0], 'white');
+            assert.equal(cb_calls[1], 'black');
+        });
+        it('callback not called when change_team called with current team', () => {
+            goban.change_team('black');
+            let cb_calls = [];
+            goban.on_team_change((team_color) => {
+                cb_calls.push(team_color);
+            });
+            goban.change_team('black');
+            assert.equal(cb_calls.length, 0);
+        });
+        it('on_team_change replaces callback', () => {
+            goban.change_team('black');
+            let cb_calls = [];
+            goban.on_team_change((team_color) => {
+                cb_calls.push(team_color);
+            });
+            let cb_calls2 = [];
+            goban.on_team_change((team_color) => {
+                cb_calls2.push(team_color);
+            });
+            goban.change_team('white');
+            assert.equal(cb_calls.length, 0);
+            assert.equal(cb_calls2.length, 1);
+            assert.equal(cb_calls2[0], 'white');
+        });
+    });
+
+    describe('grant_stone_placement_request', () => {
+        it('confirms stone placement', () => {
+            let unsynced_stone = {position: {x: -54, y: 2}, color: 'black', unsynced: true};
+            goban.stones.push({position: {x: -14, y: 32}, color: 'black', unsynced: false});
+            goban.stones.push(unsynced_stone);
+            goban.stones.push({position: {x: 31, y: 94}, color: 'white', unsynced: false});
+            goban.grant_stone_placement_request(unsynced_stone);
+            assert.equal(goban.stones.length, 3);
+            assert(goban.stones[1].unsynced == false);
+        });
+    });
+
+    describe('deny_stone_placement_request', () => {
+        it('removes denied stone', () => {
+            let stone_a = {position: {x: -14, y: 32}, color: 'black', unsynced: false};
+            let unsynced_stone = {position: {x: -54, y: 2}, color: 'black', unsynced: true};
+            let stone_b = {position: {x: 31, y: 94}, color: 'white', unsynced: false};
+            goban.stones.push(stone_a);
+            goban.stones.push(unsynced_stone);
+            goban.stones.push(stone_b);
+            goban.deny_stone_placement_request(unsynced_stone);
+            assert.equal(goban.stones.length, 2);
+            assert.deepStrictEqual(goban.stones[0], stone_a);
+            assert.deepStrictEqual(goban.stones[1], stone_b);
+        });
+    });
+
+    describe('add_stone', () => {
+        let stone_a = {position: {x: -14, y: 32}, color: 'black', unsynced: false};
+        let stone_b = {position: {x: 31, y: 94}, color: 'white', unsynced: false};
+        let stone_c = {position: {x: 11, y: 94}, color: 'white', unsynced: true};
+        beforeEach(() => {
+            goban.stones.push(stone_a);
+            goban.stones.push(stone_b);
+            goban.stones.push(stone_c);
+        });
+        it('replaces existing stone', () => {
+            let stone_d = {position: {x: 11, y: 94}, color: 'black'};
+            goban.add_stone(stone_d);
+            assert.equal(goban.stones.length, 3);
+            assert.deepStrictEqual(goban.stones[0], stone_a);
+            assert.deepStrictEqual(goban.stones[1], stone_b);
+            assert.deepStrictEqual(goban.stones[2], stone_d);
+        });
+        it('adds stone to list when position is empty', () => {
+            let stone_d = {position: {x: 12, y: 34}, color: 'black'};
+            goban.add_stone(stone_d);
+            assert.equal(goban.stones.length, 4);
+            assert.deepStrictEqual(goban.stones[0], stone_a);
+            assert.deepStrictEqual(goban.stones[1], stone_b);
+            assert.deepStrictEqual(goban.stones[2], stone_c);
+            assert.deepStrictEqual(goban.stones[3], stone_d);
+        });
+    });
+
+    it('remove_stone', () => {
+        //TODO what if stone doesn't quite match?
+        let stone_a = {position: {x: -14, y: 32}, color: 'black', unsynced: false};
+        let stone_b = {position: {x: 31, y: 94}, color: 'white', unsynced: false};
+        let stone_c = {position: {x: 11, y: 94}, color: 'white', unsynced: true};
+        goban.stones.push(stone_a);
+        goban.stones.push(stone_b);
+        goban.stones.push(stone_c);
+        goban.remove_stone({position: {x: 31, y: 94}, color: 'white'});
+        assert.equal(goban.stones.length, 2);
+        assert.equal(goban.stones[0], stone_a);
+        assert.equal(goban.stones[1], stone_c);
+    });
+
+    describe('set_viewport', () => {
+        beforeEach(() => {
+        });
+        it('calls viewport change callback if the viewport changed', () => {
+        });
+        it('calls viewport change callback if the viewport is different than the provided viewport', () => {
+        });
+        it('doesn\'t call the viewport change callback if the viewport did not change', () => {
+        });
+        it('centers viewport on center of provided viewport', () => {
+        });
+    });
 });
 
-//     grid_width?
-//     grid_height?
-//     draw_grid?
-//     draw_stone?
-//     draw?

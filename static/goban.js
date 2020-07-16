@@ -52,10 +52,14 @@ class Goban {
         this._canvas.width = this._canvas.clientWidth * device_pixel_ratio;
         this._canvas.height = this._canvas.clientHeight * device_pixel_ratio;
         this._ctx.scale(device_pixel_ratio, device_pixel_ratio);
+        this._update_viewport();
         window.requestAnimationFrame(() => this._draw());
     }
 
     change_team(color) {
+        if (this._team_change_cb && this._stone_color != color) {
+            this._team_change_cb(color);
+        }
         this._stone_color = color;
         if (this.unconfirmed_stone) {
             this.unconfirmed_stone.color = color;
@@ -87,6 +91,7 @@ class Goban {
         this.offset.y += delta_y;
         this._panning_from.x = x; 
         this._panning_from.y = y;
+        this._update_viewport();
         window.requestAnimationFrame(() => this._draw());
     }
 
@@ -101,7 +106,7 @@ class Goban {
         } else {
             if (this.unconfirmed_stone.position.x == out_pos.x &&
                 this.unconfirmed_stone.position.y == out_pos.y) {
-                this._confirm_stone_placement();
+                this._request_stone_placement();
             } else {
                 this._place_unconfirmed_stone(this._stone_color, out_pos);
             }
@@ -149,7 +154,7 @@ class Goban {
         }
     }
 
-    _draw_stone(color, pos, unconfirmed) {
+    _draw_stone(color, pos, unconfirmed, unsynced) {
         const x = pos.x * this._grid_width + this.offset.x;
         const y = pos.y * (this._grid_width/this._grid_ratio) + this.offset.y;
         this._ctx.beginPath();
@@ -161,16 +166,50 @@ class Goban {
             this._ctx.strokeStyle = color;
             this._ctx.fillStyle = 'rgba(0,0,0,0)';
         }
+        if (unsynced && !unconfirmed) {
+            this._ctx.globalAlpha = 0.5;
+        }
         this._ctx.arc(x, y, this._grid_width*0.5-3, 0, 2*Math.PI);
         this._ctx.fill();
         this._ctx.stroke();
+        this._ctx.globalAlpha = 1.0;
+    }
+
+    _compute_viewport() {
+        let viewport = {};
+        viewport.left = Math.floor(-this.offset.x / this._grid_width + 0.5);
+        viewport.right = Math.ceil((-this.offset.x + this._canvas.width) / this._grid_width - 0.5);
+        let grid_height = this._grid_width / this._grid_ratio;
+        viewport.top = Math.floor(-this.offset.y / grid_height + 0.5);
+        viewport.bottom = Math.ceil((-this.offset.y + this._canvas.height) / grid_height - 0.5);
+        return viewport;
+    }
+
+    _update_viewport() {
+        let viewport = this._compute_viewport();
+        if (!this._viewport) {
+            this._viewport = viewport;
+            if (this._viewport_change_cb) {
+                this._viewport_change_cb(viewport);
+            }
+            return;
+        }
+        if (viewport.top != this._viewport.top ||
+            viewport.bottom != this._viewport.bottom ||
+            viewport.left != this._viewport.left ||
+            viewport.right != this._viewport.right) {
+            this._viewport = viewport;
+            if (this._viewport_change_cb) {
+                this._viewport_change_cb(viewport);
+            }
+        }
     }
 
     _draw() {
         this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
         this._draw_grid();
         this.stones.forEach((stone) => {
-            this._draw_stone(stone.color, stone.position);
+            this._draw_stone(stone.color, stone.position, false, stone.unsynced);
         });
         if (this.unconfirmed_stone) {
             this._draw_stone(this.unconfirmed_stone.color, this.unconfirmed_stone.position, true);
@@ -189,13 +228,86 @@ class Goban {
 
     _place_unconfirmed_stone(color, pos) {
         if (this._point_empty(pos)) {
-            this.unconfirmed_stone = {color: color, position: pos};
+            this.unconfirmed_stone = {color: color, position: pos, unsynced: true};
         }
     }
 
-    _confirm_stone_placement() {
+    _request_stone_placement() {
         this.stones.push(this.unconfirmed_stone);
+        let stone = this.unconfirmed_stone;
         this.unconfirmed_stone = null;
+        if (this._stone_placement_request_cb) {
+            this._stone_placement_request_cb(stone);
+        }
     }
 
+    grant_stone_placement_request(stone) {
+        this.stones.forEach((i) => {
+            if (i.color == stone.color &&
+                i.position.x == stone.position.x &&
+                i.position.y == stone.position.y) {
+                i.unsynced = false;
+            }
+        });
+        window.requestAnimationFrame(() => this._draw());
+    }
+
+    deny_stone_placement_request(stone) {
+        this.remove_stone(stone);
+    }
+
+    on_stone_placement_request(cb) {
+        this._stone_placement_request_cb = cb;
+    }
+
+    on_viewport_change(cb) {
+        this._viewport_change_cb = cb;
+    }
+
+    on_team_change(cb) {
+        this._team_change_cb = cb;
+    }
+
+    set_stones(stones) {
+    }
+
+    /**
+     * Sets the position of center of the viewport to the center of the provided viewport.
+     *
+     * @param {Object} viewport - The new viewport.
+     */
+    set_viewport(viewport) {
+    }
+
+    /**
+     * @returns {Object} - A copy of the current viewport.
+     */
+    get_viewport() {
+    }
+
+    /**
+     * @param {Object} stone - The stone to add to the goban.
+     */
+    add_stone(stone) {
+        for (let i = 0; i < this.stones.length; i++) {
+            if (this.stones[i].position.x == stone.position.x &&
+                this.stones[i].position.y == stone.position.y) {
+                this.stones[i] = stone;
+                return;
+            }
+        }
+        this.stones.push(stone);
+    }
+
+    /**
+     * @param {Object} stone - The stone to remove from the goban.
+     */
+    remove_stone(stone) {
+        for (let i = 0; i < this.stones.length; i++) {
+            if (this.stones[i].position.x == stone.position.x &&
+                this.stones[i].position.y == stone.position.y) {
+                this.stones.splice(i, 1);
+            }
+        }
+    }
 }
