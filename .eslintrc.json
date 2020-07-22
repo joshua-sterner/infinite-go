@@ -33,7 +33,8 @@
             "error",
             "always"
         ],
-        "jsdoc/no-undefined-types": "off"
+        "jsdoc/no-undefined-types": "warn"
     },
-    "ignorePatterns": ["out/"]
+    "ignorePatterns": ["out/"],
+    "parser": "babel-eslint"
 }
