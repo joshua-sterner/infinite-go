@@ -1,13 +1,27 @@
 const {Pool, Client} = require('pg');
 
-//TODO Test this...
+/**
+ * Database Connection Settings Definition
+ *
+ * @typedef {object} DBConnectionSettings
+ * @property {string} database The name of the database.
+ * @property {string} [user] The name of the database user.
+ * @property {string} [password] The password for the database account.
+ * @property {string} [host] The hostname of the database server.
+ * @property {number} [port] The port the database is on.
+ */
 
 /**
  * Creates a postgres connection url from the database connection setttings.
  *
- * @param db_connection_settings
+ * @param {DBConnectionSettings} db_connection_settings The details required to
+ * log in to the database.
+ * @returns {string} A url for the postgres server.
  */
 function make_connection_url(db_connection_settings) {
+    if (!db_connection_settings.database) {
+        throw new Error('database field is required in DBConnectionSettings');
+    }
     let url = 'postgresql://';
     if (db_connection_settings.user) { 
         url += db_connection_settings.user;
@@ -20,9 +34,6 @@ function make_connection_url(db_connection_settings) {
     }
     if (db_connection_settings.port) {
         url += ':' + db_connection_settings.port;
-    }
-    if (!db_connection_settings.database) {
-        throw new Error(`database field is required in ${db_connection_settings_filename}`);
     }
     url += '/' + db_connection_settings.database;
     return url;

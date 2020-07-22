@@ -1,5 +1,28 @@
 /**
- * @param db_user
+ * @typedef {object} Viewport
+ * @property {number} top - The y coordinate of the top-most visible row of the
+ * viewport (y axis is positive down).
+ * @property {number} bottom - The y coordinate of the bottom visible row of the
+ * viewport (y axis is positive down).
+ * @property {number} left - The x coordinate of the left visible column of the
+ * viewport.
+ * @property {number} right - The x coordinate of the right visible column of
+ * the viewport.
+ */
+
+/**
+ * @typedef {object} User
+ * @property {number} id - The user's account id.
+ * @property {string} username - The user's username.
+ * @property {string} email - The users's email address.
+ * @property {string} password - The bcrypt-hashed password for this user account.
+ * @property {string} date_created - The date the user account was created.
+ * @property {Viewport} viewport - The active viewport of this user.
+ */
+
+/**
+ * @param {object} db_user The user object as returned by a database query.
+ * @returns {User} The user object in a more organized format.
  */
 function db_user_to_user(db_user) {
     var user = {};
@@ -18,6 +41,10 @@ function db_user_to_user(db_user) {
 
 //TODO db creation
 
+/**
+ * Retrieves and stores user account data to/from the database.
+ *
+ */
 class Users {
 
     constructor(db_connection_pool) {

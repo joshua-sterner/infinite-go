@@ -20,11 +20,11 @@ window.addEventListener('load', () => {
         panel.classList.add('panel-backdrop-filter');
     }
     let ws = new WebSocket(`ws://${location.host}`);
-    let igwsc = new InfiniteGoWebsocketClient(ws, goban)
+    new InfiniteGoWebsocketClient(ws, goban);
 });
 
 /**
- *
+ * Opens the sidebar.
  */
 function open_panel() {
     const panel_icon = document.getElementById('panel-icon');
@@ -35,7 +35,7 @@ function open_panel() {
 }
 
 /**
- *
+ * Closes the sidebar.
  */
 function close_panel() {
     const panel_icon = document.getElementById('panel-icon');
@@ -46,7 +46,7 @@ function close_panel() {
 }
 
 /**
- * @param color
+ * @param {('black'|'white')} color The color of the team to switch to.
  */
 function change_team(color) {
     const white_team_button = document.getElementById('white-team-button');
