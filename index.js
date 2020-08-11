@@ -10,7 +10,7 @@ const db_connection_settings_filename = 'test/test_db_connection.json';
 const db_connection_settings = JSON.parse(fs.readFileSync(db_connection_settings_filename));
 const db_connection_url = db.make_connection_url(db_connection_settings);
 console.log(db_connection_url);
-child_process.execSync(`psql ${db_connection_url} -f test/users.test.pre.sql`);
+child_process.execSync(`psql -f test/users.test.pre.sql ${db_connection_url}`);
 
 const db_connection_pool = new db.Pool(db_connection_settings);
 

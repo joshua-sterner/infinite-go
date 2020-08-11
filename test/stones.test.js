@@ -72,11 +72,11 @@ describe('Stones', () => {
 
     beforeEach(() => {
         // prevent psql command from warning about cascading drop
-        child_process.execSync(`psql ${db.connection_url} -c "DROP TABLE IF EXISTS stones;"`);
+        child_process.execSync(`psql -c "DROP TABLE IF EXISTS stones;" ${db.connection_url}`);
         // need to load users test data because the stone table has
         // a foreign key referencing the usernames column in users
-        child_process.execSync(`psql ${db.connection_url} -f test/users.test.pre.sql`);
-        child_process.execSync(`psql ${db.connection_url} -f test/stones.test.pre.sql`);
+        child_process.execSync(`psql -f test/users.test.pre.sql ${db.connection_url}`);
+        child_process.execSync(`psql -f test/stones.test.pre.sql ${db.connection_url}`);
         stones = new Stones(db_connection_pool);
     });
 

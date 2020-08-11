@@ -58,7 +58,7 @@ describe('Users', () => {
     });
 
     beforeEach(() => {
-        child_process.execSync(`psql ${db.connection_url} -f test/users.test.pre.sql`);
+        child_process.execSync(`psql -f test/users.test.pre.sql ${db.connection_url}`);
         users = new Users(db_connection_pool);
     });
 
