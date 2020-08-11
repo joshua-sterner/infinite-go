@@ -178,10 +178,10 @@ class Goban {
     _compute_viewport() {
         let viewport = {};
         viewport.left = Math.floor(-this.offset.x / this._grid_width + 0.5);
-        viewport.right = Math.ceil((-this.offset.x + this._canvas.width) / this._grid_width - 0.5);
+        viewport.right = Math.ceil((-this.offset.x + this._canvas.clientWidth) / this._grid_width - 0.5);
         let grid_height = this._grid_width / this._grid_ratio;
         viewport.top = Math.floor(-this.offset.y / grid_height + 0.5);
-        viewport.bottom = Math.ceil((-this.offset.y + this._canvas.height) / grid_height - 0.5);
+        viewport.bottom = Math.ceil((-this.offset.y + this._canvas.clientHeight) / grid_height - 0.5);
         return viewport;
     }
 
@@ -277,12 +277,24 @@ class Goban {
      * @param {Object} viewport - The new viewport.
      */
     set_viewport(viewport) {
+        //TODO test?
+        let w = viewport.right - viewport.left;
+        let h = viewport.bottom - viewport.top;
+        let x = Math.round(w/2) + viewport.left;
+        let y = Math.round(h/2) + viewport.top;
+        let grid_height = this._grid_width / this._grid_ratio;
+        let vw = this._canvas.clientWidth / this._grid_width;
+        let vh = this._canvas.clientHeight / grid_height;
+        this.offset.x = -this._grid_width * (x - vw/2);
+        this.offset.y = -grid_height * (y - vh/2);
+        window.requestAnimationFrame(() => this._draw());
     }
 
     /**
      * @returns {Object} - A copy of the current viewport.
      */
     get_viewport() {
+        return this._compute_viewport();
     }
 
     /**

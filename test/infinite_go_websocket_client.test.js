@@ -167,7 +167,7 @@ describe('InfiniteGoWebsocketClient', () => {
     it('handles stone placement request approval', () => {
         ws.onmessage({data: JSON.stringify({
             type: 'stone_placement_request_approved',
-            stone: stone
+            stones: [stone]
         })});
         assert.equal(goban.grant_stone_placement_request_calls.length, 1);
         assert.deepStrictEqual(goban.grant_stone_placement_request_calls[0], stone);

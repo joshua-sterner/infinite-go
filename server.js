@@ -11,7 +11,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const http = require('http');
 const WebSocket = require('ws');
-const util = require('util');
+
 
 /**
  * Creates a Passport instance for the server.
@@ -123,19 +123,47 @@ class Server {
                 });
             });
         });
+        
+        this.ws_sessions = new Map();
+
+        const ws_message_map = new Map();
+        ws_message_map.set('stone_placement_request', (msg, ws) => {
+            setTimeout(() => {
+                // TODO where should this confirmation actually happen?
+                ws.send(JSON.stringify({
+                    type: 'stone_placement_request_approved',
+                    stones: [msg.stone]
+                }));
+            }, 1500);
+        });
+        ws_message_map.set('viewport_coordinates', (msg, ws, user_id) => {
+            this.ws_sessions.get(user_id).forEach((i) => {
+                if (i != ws) {
+                    i.send(JSON.stringify({
+                        type: 'viewport_coordinates',
+                        viewport: msg.viewport
+                    }));
+                }
+            });
+        });
+
+        ws_message_map.max_type_length = 0;
+        for (let i of ws_message_map.keys()) {
+            ws_message_map.max_type_length = Math.max(i.length, ws_message_map.max_type_length);
+        }
 
         this.#wss.on('connection', (ws, req) => {
             let user_id = req.session.passport.user;
+            if (!this.ws_sessions.has(user_id)) {
+                this.ws_sessions.set(user_id, []);
+            }
+            this.ws_sessions.get(user_id).push(ws); //TODO test, cleanup
             ws.on('message', (message) => {
                 let msg = JSON.parse(message);
-                if (msg.type == 'stone_placement_request') {
-                    setTimeout(() => {
-                        // TODO where should this confirmation actually happen?
-                        ws.send(JSON.stringify({
-                            type: "stone_placement_request_approved",
-                            stones: [msg.stone]
-                        }));
-                    }, 1500);
+                if (typeof msg.type === 'string'
+                    && msg.type.length <= ws_message_map.max_type_length
+                    && ws_message_map.has(msg.type)) {
+                    ws_message_map.get(msg.type)(msg, ws, user_id);
                 }
             });
         });
@@ -189,7 +217,7 @@ class Server {
             }
             let encrypted_password = await bcrypt.hash(req.body.password, 10);
             let new_user = {username:req.body.username, password:encrypted_password,
-                            email:req.body.email, viewport:this.default_viewport};
+                email:req.body.email, viewport:this.default_viewport};
             const id = await this.#users.create(new_user);
             new_user.id = id;
             req.logIn(new_user, () => {
@@ -224,3 +252,5 @@ class Server {
 }
 
 module.exports = {'Server': Server};
+
+/** @typedef Users */
