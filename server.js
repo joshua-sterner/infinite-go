@@ -206,7 +206,6 @@ class Server {
         if (req.body.username.length > this.#users.MAX_USERNAME_LENGTH) {
             return res.status(400).send(`Username exceeds character limit of ${this.#users.MAX_USERNAME_LENGTH}.`);
         }
-        
         try {
             if (await this.#users.username_taken(req.body.username)) {
                 return res.status(400).send('Username taken');

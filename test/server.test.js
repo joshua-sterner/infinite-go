@@ -2,6 +2,9 @@ const request = require('supertest');
 const Server = require('../server.js').Server;
 const bcrypt = require('bcrypt');
 const assert = require('assert');
+const Users = require('../users.js').Users;
+const sinon = require('sinon');
+
 const test_user_1 = {
     'id': 1,
     'username': 'first_user',
@@ -31,127 +34,30 @@ const test_user_2 = {
     }
 };
 
-class MockUsers {
-    constructor() {
-        this.MAX_USERNAME_LENGTH = 127;
-        this.user_1 = test_user_1;
-        this.user_2 = test_user_2;
-        this.users_passed_to_create = [];
-    }
-
-    create(user) {
-        return new Promise((resolve, reject) => {
-            if (this._create_error) {
-                return reject(this._create_error);
-            }
-            this.users_passed_to_create.push(user);
-            resolve(this.users_passed_to_create.length + 2);
-        });
-    }
-
-    pass_error_from_get_by_username(should_pass_error) {
-        let error = null;
-        if (should_pass_error) {
-            error = new Error('some db error');
-        }
-        this._get_by_username_error = error;
-    }
-
-    pass_error_from_get_by_email(should_pass_error) {
-        let error = null;
-        if (should_pass_error) {
-            error = new Error('some db error');
-        }
-        this._get_by_email_error = error;
-    }
-
-    pass_error_from_create(should_pass_error) {
-        let error = null;
-        if (should_pass_error) {
-            error = new Error('some db error');
-        }
-        this._create_error = error;
-    }
-
-    get_by_username(username) {
-        return new Promise((resolve, reject) => {
-            if (this._get_by_username_error) {
-                return reject(this._get_by_username_error);
-            }
-            if (username == 'first_user') {
-                return resolve(this.user_1);
-            } else if (username == 'second_user') {
-                return resolve(this.user_2);
-            }
-            return resolve(null);
-        });
-    }
-
-    get_by_id(id) {
-        return new Promise((resolve) => {
-            if (id == 1) {
-                return resolve(this.user_1);
-            }
-            if (id == 2) {
-                return resolve(this.user_2);
-            }
-            let user = this.users_passed_to_create[0];
-            if (user && id == user.id) {
-                return resolve(user);
-            }
-            return resolve(null);
-        });
-    }
-    get_by_email(email) {
-        return new Promise((resolve, reject) => {
-            if (this._get_by_email_error) {
-                return reject(this._get_by_email_error);
-            }
-            if (email == this.user_1.email) {
-                return resolve(this.user_1);
-            }
-            if (email == this.user_2.email) {
-                return resolve(this.user_2);
-            }
-            return resolve(null);
-        });
-    }
-
-    async username_taken(username) {
-        const user = await this.get_by_username(username);
-        return (user !== null);
-    }
-
-    async email_taken(email) {
-        const user = await this.get_by_email(email);
-        return (user !== null);
-    }
-}
-
 describe('Server', () => {
 
     let users;
     let server;
     const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
-    beforeEach(() => {
-        users = new MockUsers();
+    beforeEach(function() {
+        users = sinon.createStubInstance(Users);
         server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport});
     });
 
-    describe('Server Constructor', () => {
-        it('throws when called without users object', () => {
-            assert.throws(() => {
+    describe('Server Constructor', function() {
+        it('throws when called without users object', function() {
+            assert.throws(function() {
                 new Server({session_secret:'test session secret',
                     default_viewport:default_viewport});
             });
         });
-        it('throws when called without session_secret', () => {
-            assert.throws(() => {
+        it('throws when called without session_secret', function() {
+            assert.throws(function() {
                 new Server({users:users, default_viewport:default_viewport});
             });
         });
-        it('throws when called without default_viewport', () => {
-            assert.throws(() => {
+        it('throws when called without default_viewport', function() {
+            assert.throws(function() {
                 new Server({users:users, session_secret:'test session secret'});
             });
         });
@@ -168,16 +74,18 @@ describe('Server', () => {
             });
     };
 
-    describe('GET /', () => {
-        it('whlle not authenticated returns HTTP 302 to /login', (done) => {
+    describe('GET /', function() {
+        it('whlle not authenticated returns HTTP 302 to /login', function(done) {
             request(server.app)
                 .get('/')
                 .set('Cookie', [])
                 .expect(302)
                 .expect('Location', '/login', done);
         });
-        it('while authenticated returns HTTP 200', (done) => {
-            make_authenticated_agent(users.user_1, (err, agent) => {
+        it('while authenticated returns HTTP 200', function (done) {
+            users.get_by_username.resolves(test_user_1);
+            users.get_by_id.resolves(test_user_1);
+            make_authenticated_agent(test_user_1, function(err, agent) {
                 agent
                     .get('/')
                     .expect(200, done);
@@ -185,50 +93,52 @@ describe('Server', () => {
         });
     });
 
-    describe('GET /login', () => {
-        it('returns HTTP 200', (done) => {
+    describe('GET /login', function() {
+        it('returns HTTP 200', function(done) {
             request(server.app)
                 .get('/login')
                 .expect(200, done);
         });
     });
 
-    describe('POST /login', () => {
-        it('with invalid username returns HTTP 403', (done) => {
+    describe('POST /login', function() {
+        it('with invalid username returns HTTP 403', function (done) {
+            users.get_by_username.resolves(null);
             request(server.app)
                 .post('/login')
                 .type('form')
                 .send({'username': 'nobody', 'password':'pw1'})
                 .expect(403, done);
         });
-        it('with invalid password returns HTTP 403', (done) => {
+        it('with invalid password returns HTTP 403', function (done) {
+            users.get_by_username.resolves(test_user_1);
             request(server.app)
                 .post('/login')
                 .type('form')
-                .send({'username': 'first_user', 'password':'wrong'})
+                .send({'username': test_user_1.username, 'password':'wrong'})
                 .expect(403, done);
         });
-        it('with valid credentials returns HTTP 302 to /', (done) => {
+        it('with valid credentials returns HTTP 302 to /', function (done) {
+            users.get_by_username.resolves(test_user_1);
             request(server.app)
                 .post('/login')
                 .type('form')
-                .send({'username':users.user_1.username, 'password':users.user_1.unencrypted_password})
+                .send({'username':test_user_1.username, 'password':test_user_1.unencrypted_password})
                 .expect(302)
                 .expect('Location', '/', done);
         });
-        it('when db error occurs returns HTTP 500', (done) => {
-            users.pass_error_from_get_by_username(true);
-            users.pass_error_from_get_by_email(true);
+        it('when db error occurs returns HTTP 500', function (done) {
+            users.get_by_username.rejects();
             request(server.app)
                 .post('/login')
                 .type('form')
-                .send({'username':users.user_1.username, 'password':users.user_1.unencrypted_password})
+                .send({'username':test_user_1.username, 'password':test_user_1.unencrypted_password})
                 .expect(500, done);
         });
     });
 
-    describe('GET /register', () => {
-        it('returns HTTP 200', (done) => {
+    describe('GET /register', function() {
+        it('returns HTTP 200', function(done) {
             request(server.app)
                 .get('/register')
                 .expect(200, done);
@@ -236,7 +146,9 @@ describe('Server', () => {
     });
     
     describe('POST /register', () => {
-        it('with valid account info returns HTTP 302 to /', (done) => {
+        it('with valid account info returns HTTP 302 to /', function (done) {
+            users.username_taken.resolves(false);
+            users.email_taken.resolves(false);
             request(server.app)
                 .post('/register')
                 .type('form')
@@ -244,7 +156,11 @@ describe('Server', () => {
                 .expect(302)
                 .expect('Location', '/', done);
         });
-        it('with valid account info authenticates user', (done) => {
+        it('with valid account info authenticates user', function (done) {
+            users.username_taken.resolves(false);
+            users.email_taken.resolves(false);
+            users.create.resolves(123); // user id
+            users.get_by_id.resolves({id: 123, username:'new_user'});
             request(server.app)
                 .post('/register')
                 .type('form')
@@ -256,52 +172,53 @@ describe('Server', () => {
                         .expect(200, done);
                 });
         });
-        it('with valid account info creates user in db', (done) => {
+
+
+        it('with valid account info creates user in db', function (done) {
+            users.username_taken.resolves(false);
+            users.email_taken.resolves(false);
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
                 .end(() => {
-                    const created_users = users.users_passed_to_create;
-                    if (created_users.length != 1) {
-                        return done(`registration created ${created_users.length} users`);
-                    }
+                    assert(users.create.calledOnce);
                     return done();
                 });
         });
-        it('with valid account info creates user with correct username', (done) => {
+        it('with valid account info creates user with correct username', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
                 .end(() => {
-                    const user = users.users_passed_to_create[0];
+                    const user = users.create.firstCall.args[0];
                     if (user.username == 'new_user') {
                         return done();
                     }
                     return done(new Error('username mismatch'));
                 });
         });
-        it('with valid account info creates user with correct email', (done) => {
+        it('with valid account info creates user with correct email', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
                 .end(() => {
-                    const user = users.users_passed_to_create[0];
+                    const user = users.create.firstCall.args[0];
                     if (user.email == 'new@user.com') {
                         return done();
                     }
                     return done(new Error('email mismatch'));
                 });
         });
-        it('with valid account info creates user with correct viewport', (done) => {
+        it('with valid account info creates user with correct viewport', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
                 .end(() => {
-                    const user = users.users_passed_to_create[0];
+                    const user = users.create.firstCall.args[0];
                     if (user.viewport &&
                         user.viewport.top == default_viewport.top &&
                         user.viewport.right == default_viewport.right &&
@@ -312,13 +229,13 @@ describe('Server', () => {
                     return done(new Error(`invalid viewport: ${user.viewport}`));
                 });
         });
-        it('with valid accout info stores password using bcrypt', (done) => {
+        it('with valid accout info stores password using bcrypt', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw', 'email':'new@user.com'})
                 .end(() => {
-                    const user = users.users_passed_to_create[0];
+                    const user = users.create.firstCall.args[0];
                     if (user.password.substr(0,4) != '$2b$') {
                         return done(new Error('password not stored as valid bcrypt string'));
                     }
@@ -332,16 +249,19 @@ describe('Server', () => {
                     });
                 });
         });
-        it('returns HTTP 302 to / when username is max length', (done) => {
-            let username = 'a'.repeat(users.MAX_USERNAME_LENGTH);
+
+
+        it('returns HTTP 302 to / when username is max length', function (done) {
+            let username = 'a'.repeat(Users.MAX_USERNAME_LENGTH);
             request(server.app)
                 .post('/register')
                 .type('form')
-                .send({'username':username , 'password':'new_pw', 'email':'new@user.com'})
+                .send({'username':username, 'password':'new_pw', 'email':'new@user.com'})
                 .expect(302)
                 .expect('Location', '/', done);
         });
-        it('returns HTTP 400 when username one character too long', (done) => {
+        it('returns HTTP 400 when username one character too long', function (done) {
+            users.MAX_USERNAME_LENGTH = Users.MAX_USERNAME_LENGTH;
             let username = 'a'.repeat(users.MAX_USERNAME_LENGTH+1);
             request(server.app)
                 .post('/register')
@@ -349,67 +269,69 @@ describe('Server', () => {
                 .send({'username':username , 'password':'new_pw', 'email':'new@user.com'})
                 .expect(400, done);
         });
-        it('with missing username returns HTTP 400', (done) => {
+        it('with missing username returns HTTP 400', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'password':'new_pw', 'email':'new@user.com'})
                 .expect(400, done);
         });
-        it('with duplicate username returns HTTP 400', (done) => {
+        it('with duplicate username returns HTTP 400', function (done) {
+            users.username_taken.resolves(true);
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'first_user', 'password':'new_pw', 'email':'new@user.com'})
-                .expect(400, done);
+                .expect(400, () => {
+                    assert(users.username_taken.calledWith('first_user'));
+                    done();
+                });
         });
-        it('with missing email returns HTTP 400', (done) => {
+        it('with missing email returns HTTP 400', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'password':'new_pw'})
                 .expect(400, done);
         });
-        it('with duplicate email returns HTTP 400', (done) => {
+        it('with duplicate email returns HTTP 400', function (done) {
+            users.email_taken.resolves(true);
             request(server.app)
                 .post('/register')
                 .type('form')
-                .send({'username':'new_user', 'email':users.user_1.email, 'password':'new_pw'})
-                .expect(400, done);
+                .send({'username':'new_user', 'email':'test@email.com', 'password':'new_pw'})
+                .expect(400, () => {
+                    assert(users.email_taken.calledWith('test@email.com'));
+                    done();
+                });
         });
-        //it('with invalid email returns HTTP 400', (done) => {
-        //    request(server.app)
-        //        .post('/register')
-        //        .type('form')
-        //        .send({'username':'new_user', 'email':'invalid_email', 'password':'new_pw'})
-        //        .expect(400, done);
-        //});
-        //TODO send confirmation email
-        it('with missing password returns HTTP 400', (done) => {
+        it('with invalid email returns HTTP 400');
+        it('sends confirmation email');
+        it('with missing password returns HTTP 400', function(done) {
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'email':'new@user.com'})
                 .expect(400, done);
         });
-        it('returns http 500 on error from get_by_username', (done) => {
-            users.pass_error_from_get_by_username(true);
+        it('returns http 500 on error from username_taken', function(done) {
+            users.username_taken.rejects();
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'email':'new@user.com', 'password':'new_pw'})
                 .expect(500, done);
         });
-        it('returns http 500 on error from get_by_email', (done) => {
-            users.pass_error_from_get_by_email(true);
+        it('returns http 500 on error from email_taken', function(done) {
+            users.email_taken.rejects();
             request(server.app)
                 .post('/register')
                 .type('form')
                 .send({'username':'new_user', 'email':'new@user.com', 'password':'new_pw'})
                 .expect(500, done);
         });
-        it('returns http 500 on error from users.create', (done) => {
-            users.pass_error_from_create(true);
+        it('returns http 500 on error from users.create', function(done) {
+            users.create.rejects();
             request(server.app)
                 .post('/register')
                 .type('form')
@@ -420,21 +342,25 @@ describe('Server', () => {
     });
 
     describe('GET /logout', () => {
-        it('returns HTTP 302 to /login when previously authenticated', (done) => {
-            make_authenticated_agent(users.user_1, (err, agent) => {
+        it('returns HTTP 302 to /login when previously authenticated', function (done) {
+            users.get_by_username.resolves(test_user_1);
+            users.get_by_id.resolves(test_user_1);
+            make_authenticated_agent(test_user_1, (err, agent) => {
                 agent.get('/logout')
                     .expect(302)
                     .expect('Location', '/login', done);
             });
         });
-        it('returns HTTP 302 to /login when not previously authenticated', (done) => {
+        it('returns HTTP 302 to /login when not previously authenticated', function(done) {
             request(server.app)
                 .get('/logout')
                 .expect(302)
                 .expect('Location', '/login', done);
         });
-        it('deauths active session', (done) => {
-            make_authenticated_agent(users.user_1, (err, agent) => {
+        it('deauths active session', function (done) {
+            users.get_by_username.resolves(test_user_1);
+            users.get_by_id.resolves(test_user_1);
+            make_authenticated_agent(test_user_1, (err, agent) => {
                 agent.get('/logout')
                     .end(() => {
                         agent.get('/')

@@ -41,15 +41,15 @@ function db_user_to_user(db_user) {
 
 //TODO db creation
 
+const MAX_USERNAME_LENGTH = 127;
+
 /**
  * Retrieves and stores user account data to/from the database.
- *
  */
 class Users {
 
     constructor(db_connection_pool) {
-        //TODO Users.MAX_USERNAME_LENGTH should be defined in one place
-        this.MAX_USERNAME_LENGTH = 127;
+        this.MAX_USERNAME_LENGTH = MAX_USERNAME_LENGTH;
         this.db_connection_pool = db_connection_pool;
     }
 
@@ -178,5 +178,6 @@ class Users {
     }
 
 }
+Users.MAX_USERNAME_LENGTH = MAX_USERNAME_LENGTH;
 
 module.exports = {'Users': Users};
