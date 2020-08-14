@@ -4,6 +4,8 @@ const bcrypt = require('bcrypt');
 const assert = require('assert');
 const Users = require('../users.js').Users;
 const sinon = require('sinon');
+const WebSocket = require('ws');
+const InfiniteGoAPI = require('../api.js');
 
 const test_user_1 = {
     'id': 1,
@@ -14,34 +16,39 @@ const test_user_1 = {
     'date_created': '2019-11-13T15:13:12.345Z',
     'viewport': {
         'top': 10,
-        'right': 11,
+        'right': 21,
         'bottom': 12,
         'left': 13
     }
 };
-const test_user_2 = {
-    'id': 2,
-    'username': 'second_user',
-    'email': 'second@example.io',
-    'unencrypted_password': 'pw2',
-    'password': bcrypt.hashSync('pw2', 10),
-    'date_created': '2012-01-23T12:34:56.789Z',
-    'viewport': {
-        'top': 6,
-        'right': 11,
-        'bottom': -6,
-        'left': -11
-    }
-};
+
+function make_user(id) {
+    return {
+        id: id,
+        username: `user_${id}`,
+        email: `user_${id}@example.tld`,
+        unencrypted_password: `password_${id}`,
+        password: bcrypt.hashSync(`password_${id}`, 10),
+        date_created: new Date(Date.now() + 6000*id).toISOString(),
+        viewport: {
+            top:  -10,
+            right: 10,
+            bottom: 32,
+            left: -20
+        }
+    };
+}
 
 describe('Server', () => {
 
     let users;
     let server;
+    let api;
     const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
     beforeEach(function() {
         users = sinon.createStubInstance(Users);
-        server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport});
+        api = sinon.createStubInstance(InfiniteGoAPI);
+        server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport, api:api});
     });
 
     describe('Server Constructor', function() {
@@ -69,8 +76,8 @@ describe('Server', () => {
             .post('/login')
             .type('form')
             .send({'username':user.username, 'password':user.unencrypted_password})
-            .end((err) => {
-                cb(err, agent);
+            .end((err, res) => {
+                cb(err, agent, res);
             });
     };
 
@@ -89,6 +96,16 @@ describe('Server', () => {
                 agent
                     .get('/')
                     .expect(200, done);
+            });
+        });
+        it('returns HTTP 500 when unable to retrieve user from db', function(done) {
+            users.get_by_username.resolves(test_user_1);
+            users.get_by_id.onCall(0).rejects();
+            make_authenticated_agent(test_user_1, function(err, agent) {
+                agent
+                    .get('/')
+                    .expect(500)
+                    .expect('Location', '/login', done);
             });
         });
     });
@@ -341,7 +358,7 @@ describe('Server', () => {
         //TODO captcha?
     });
 
-    describe('GET /logout', () => {
+    describe('GET /logout', function() {
         it('returns HTTP 302 to /login when previously authenticated', function (done) {
             users.get_by_username.resolves(test_user_1);
             users.get_by_id.resolves(test_user_1);
@@ -357,7 +374,7 @@ describe('Server', () => {
                 .expect(302)
                 .expect('Location', '/login', done);
         });
-        it('deauths active session', function (done) {
+        it('deauths active session', function(done) {
             users.get_by_username.resolves(test_user_1);
             users.get_by_id.resolves(test_user_1);
             make_authenticated_agent(test_user_1, (err, agent) => {
@@ -367,6 +384,248 @@ describe('Server', () => {
                             .expect(302)
                             .expect('Location', '/login', done);
                     });
+            });
+        });
+    });
+
+    const with_auth_ws = function(cb, user) {
+        users.get_by_username.resolves(user);
+        users.get_by_id.resolves(user);
+        make_authenticated_agent(user, (err, agent, res) => {
+            let f = () => {
+                const cookies = res.headers['set-cookie'];
+                const session_cookie = cookies.filter((x) => x.startsWith('connect.sid'))[0];
+                const ws = new WebSocket('ws://localhost:3001', {headers: {Cookie: session_cookie}});
+                cb(ws);
+            };
+            if (!server.listening()) {
+                server.listen(3001, () => {
+                    f();
+                });
+            } else {
+                f();
+            }
+        });
+    };
+
+    describe('Websocket', function() {
+        it('Can open websocket connection when authenticated', function(done) {
+            with_auth_ws((ws) => {
+                ws.on('open', () => {
+                    ws.close();
+                    server.close(done);
+                });
+            }, test_user_1);
+        });
+        it('Calls api.connect with user_id on connection.', function(done) {
+            with_auth_ws((ws) => {
+                ws.on('open', () => {
+                    ws.close();
+                    if (!api.connect.calledWith(test_user_1.id)) {
+                        server.close(() => {
+                            done(new Error());
+                        });
+                    } else {
+                        server.close(done);
+                    }
+                });
+            }, test_user_1);
+        });
+        it('Calls api.call with message and user_id.', function(done) {
+            with_auth_ws((ws) => {
+                ws.on('open', () => {
+                    const message = '{"test": 123}';
+                    ws.send(message);
+                    ws.close();
+                    server.close(() => {
+                        if (!api.call.calledWith(message, test_user_1.id)) {
+                            done(new Error());
+                        } else {
+                            done();
+                        }
+                    });
+                });
+            }, test_user_1);
+        });
+        it('Calls api.disconnect on disconnect.', function(done) {
+            with_auth_ws((ws) => {
+                ws.on('open', () => {
+                    ws.on('close', () => {
+                        server.close(() => {
+                            setTimeout(() => { //TODO Shouldn't need setTimeout here...
+                                if (!api.disconnect.calledWith(test_user_1.id)) {
+                                    done(new Error());
+                                } else {
+                                    done();
+                                }
+                            }, 10);
+                        });
+                    });
+                    ws.close();
+                    
+                });
+            }, test_user_1);
+        });
+
+        const with_auth_ws_connections = function(n, cb, cb_closed, connections_per_user=1) {
+            let n_closed = 0;
+            const f = function(n, i=1) {
+                const id = (i - 1) % n + 1;
+                const user = make_user(id);
+                with_auth_ws((ws) => {
+                    ws.on('open', () => {
+                        if (i != n*connections_per_user) {
+                            f(n, i+1);
+                        }
+                    });
+                    ws.on('close', () => {
+                        n_closed++;
+                        if (n_closed == n*connections_per_user && cb_closed) {
+                            cb_closed();
+                        }
+                    });
+                    cb(ws, id, user, Math.floor((i - 1)/n));
+                }, user);
+            };
+            f(n);
+        };
+
+        it('Calls api.connect with a unique connection_id.', function(done) {
+            const n = 10;
+            with_auth_ws_connections(n, (ws) => {
+                ws.on('open', () => {
+                    ws.close();
+                });
+            }, () => {
+                server.close(() => {
+                    const connection_ids = new Set();
+                    for (let i = 0; i < api.connect.callCount; i++) {
+                        connection_ids.add(api.connect.getCall(i).args[1]);
+                    }
+                    if (connection_ids.size == n) {
+                        done();
+                    } else {
+                        done(new Error());
+                    }
+                });
+            });
+        });
+        it('Calls api.disconnect with the same connection_ids as api.connect.', function(done) {
+            const n = 10;
+            with_auth_ws_connections(n, (ws) => {
+                ws.on('open', () => {
+                    ws.close();
+                });
+            }, () => {
+                server.close(() => {
+                    const connection_ids = new Map();
+                    for (let i = 0; i < api.connect.callCount; i++) {
+                        let [user_id, connection_id] = api.connect.getCall(i).args;
+                        connection_ids.set(user_id, connection_id);
+                    }
+                    for (let i = 0; i < api.disconnect.callCount; i++) {
+                        let [user_id, connection_id] = api.disconnect.getCall(i).args;
+                        if (connection_id != connection_ids.get(user_id)) {
+                            return done(new Error());
+                        }
+                    }
+                    done();
+                });
+            });
+        });
+        it('Calls api.call with the same connection_id as api.connect.', function(done) {
+            const n = 10;
+            with_auth_ws_connections(n, (ws, i) => {
+                ws.on('open', () => {
+                    ws.send(`user ${i}`);
+                    ws.close();
+                });
+            }, () => {
+                server.close(() => {
+                    const connection_ids = new Map();
+                    for (let i = 0; i < api.connect.callCount; i++) {
+                        let [user_id, connection_id] = api.connect.getCall(i).args;
+                        connection_ids.set(user_id, connection_id);
+                    }
+                    for (let i = 0; i < api.call.callCount; i++) {
+                        let [msg, user_id, connection_id] = api.call.getCall(i).args;
+                        if (connection_id != connection_ids.get(user_id)) {
+                            return done(new Error('Invalid Connection ID.'));
+                        }
+                        if (msg != `user ${user_id}`) {
+                            return done(new Error('Incorrect message.'));
+                        }
+                        return done();
+                    }
+                });
+            });
+        });
+        it('send hook sends a message to the correct user and connection.', function(done) {
+            const send = api.set_hooks.firstCall.args[0];
+            api.connect = function(user_id, connection_id) {
+                send(user_id, connection_id, `message to user ${user_id}`);
+            };
+            const n = 3;
+            const connections_per_user = 3;
+            let correct_message_count = 0;
+            let failed = false;
+            with_auth_ws_connections(n, (ws, id) => {
+                let recieved_correct_message = false;
+                ws.on('message', (msg) => {
+                    if (recieved_correct_message) {
+                        failed = true; // should only recieve one correct message per user connection.
+                    }
+                    if (msg == `message to user ${id}`) {
+                        recieved_correct_message = true;
+                        correct_message_count++;
+                    }
+                    ws.close();
+                });
+            }, () => {
+                server.close(() => {
+                    if (!failed && correct_message_count == n * connections_per_user) {
+                        return done();
+                    }
+                    return done(new Error());
+                });
+            }, connections_per_user);
+
+        });
+        it('close hook closes the correct connection.', function(done) {
+            const close = api.set_hooks.firstCall.args[1];
+            api.connect = function(user_id, connection_id) {
+                close(user_id, connection_id);
+            };
+            const n = 3;
+            const connections_per_user = 3;
+            with_auth_ws_connections(n, () => {
+            }, () => {
+                server.close(() => {
+                    return done();
+                });
+            }, connections_per_user);
+        });
+        it('Closes connection on unauthenticated connection attempt.', function(done) {
+            users.get_by_username.resolves(test_user_1);
+            users.get_by_id.resolves(test_user_1);
+            server.listen(3001, () => {
+                const ws = new WebSocket('ws://localhost:3001');
+                let socket_hang_up = false;
+                let closed = false;
+                ws.on('error', (err) => {
+                    if (err.message == 'socket hang up') {
+                        socket_hang_up = true;
+                        if (closed) {
+                            server.close(done);
+                        }
+                    }
+                });
+                ws.on('close', () => {
+                    closed = true;
+                    if (socket_hang_up) {
+                        server.close(done);
+                    }
+                });
             });
         });
     });

@@ -1,3 +1,4 @@
 /node_modules
 /test/test_db_connection.json
 /out
+/.nyc_output

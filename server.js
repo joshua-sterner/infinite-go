@@ -64,6 +64,18 @@ function setup_express(passport, session_secret) {
     app.use(session_parser);
     app.use(passport.initialize());
     app.use(passport.session());
+    app.use((err, req, res, next) => {
+        if (err) {
+            req.logout();
+            if (req.originalUrl == '/login') {
+                next(); //TODO
+            } else {
+                res.redirect(500, '/login');
+            }
+        } else {
+            next();
+        }
+    });
     return {app: app, session_parser: session_parser};
 }
 
@@ -77,7 +89,9 @@ class Server {
     #users;
     #passport;
     #http_server;
-    #wss
+    #wss;
+    #session_parser;
+    #api;
 
     /**
      * Constructs a new Infinite Go server instance.
@@ -92,6 +106,7 @@ class Server {
      * @param {number} args.default_viewport.bottom - The y position of the bottom of the viewport.
      * @param {number} args.default_viewport.left - The x position of the left of the viewport.
      * @param {number} args.default_viewport.right - The x position of the right of the viewport.
+     * @param {InfiniteGoAPI} args.api - The Infinite Go API class.
      */
     constructor(args) {
 
@@ -108,65 +123,11 @@ class Server {
 
         const {app, session_parser} = setup_express(passport, args.session_secret);
         this.app = app;
+        this.#session_parser = session_parser;
         this.#http_server = http.createServer(app);
+        this.#api = args.api;
 
-        this.#wss = new WebSocket.Server({clientTracking: false, noServer: true});
-
-        this.#http_server.on('upgrade', (req, socket, head) => {
-            session_parser(req, {}, () => {
-                if (!req.session.passport || !req.session.passport.user) {
-                    socket.destroy();
-                    return;
-                }
-                this.#wss.handleUpgrade(req, socket, head, (ws) => {
-                    this.#wss.emit('connection', ws, req);
-                });
-            });
-        });
-        
-        this.ws_sessions = new Map();
-
-        const ws_message_map = new Map();
-        ws_message_map.set('stone_placement_request', (msg, ws) => {
-            setTimeout(() => {
-                // TODO where should this confirmation actually happen?
-                ws.send(JSON.stringify({
-                    type: 'stone_placement_request_approved',
-                    stones: [msg.stone]
-                }));
-            }, 1500);
-        });
-        ws_message_map.set('viewport_coordinates', (msg, ws, user_id) => {
-            this.ws_sessions.get(user_id).forEach((i) => {
-                if (i != ws) {
-                    i.send(JSON.stringify({
-                        type: 'viewport_coordinates',
-                        viewport: msg.viewport
-                    }));
-                }
-            });
-        });
-
-        ws_message_map.max_type_length = 0;
-        for (let i of ws_message_map.keys()) {
-            ws_message_map.max_type_length = Math.max(i.length, ws_message_map.max_type_length);
-        }
-
-        this.#wss.on('connection', (ws, req) => {
-            let user_id = req.session.passport.user;
-            if (!this.ws_sessions.has(user_id)) {
-                this.ws_sessions.set(user_id, []);
-            }
-            this.ws_sessions.get(user_id).push(ws); //TODO test, cleanup
-            ws.on('message', (message) => {
-                let msg = JSON.parse(message);
-                if (typeof msg.type === 'string'
-                    && msg.type.length <= ws_message_map.max_type_length
-                    && ws_message_map.has(msg.type)) {
-                    ws_message_map.get(msg.type)(msg, ws, user_id);
-                }
-            });
-        });
+        this._setup_websocket_server();
 
         //TODO enable/disable switch for static file serving
         app.use(express.static('static'));
@@ -198,6 +159,52 @@ class Server {
             this._handle_register_request(req, res);
         });
     }
+
+
+    //TODO Test
+    _setup_websocket_server() {
+        this.ws_sessions = new Map();
+
+        this.#api.set_hooks(
+            (user_id, connection_id, json) => {
+                this.ws_sessions.get(user_id).get(connection_id).send(json);
+            },
+            (user_id, connection_id) => {
+                this.ws_sessions.get(user_id).get(connection_id).close();
+            }
+        );
+
+        this.#wss = new WebSocket.Server({clientTracking: false, noServer: true});
+
+        this.#http_server.on('upgrade', (req, socket, head) => {
+            //TODO test
+            this.#session_parser(req, {}, () => { 
+                if (!req.session.passport || !req.session.passport.user) {
+                    socket.destroy();
+                    return;
+                }
+                this.#wss.handleUpgrade(req, socket, head, (ws) => {
+                    this.#wss.emit('connection', ws, req);
+                });
+            });
+        });
+        
+
+        this.#wss.on('connection', (ws, req) => { //TODO test
+            let user_id = req.session.passport.user;
+            if (!this.ws_sessions.has(user_id)) {
+                this.ws_sessions.set(user_id, new Map()); //TODO make sure to clean up the session map on disconnect.
+            }
+            this.ws_sessions.get(user_id).set(req.sessionID, ws); //TODO test, cleanup
+            this.#api.connect(user_id, req.sessionID);
+            ws.on('close', () => {
+                this.#api.disconnect(user_id, req.sessionID);
+            });
+            ws.on('message', (message) => {
+                this.#api.call(message, user_id, req.sessionID);
+            });
+        });
+    }
     
     async _handle_register_request(req, res) {
         if (!req.body.username || !req.body.email || !req.body.password) {
@@ -223,7 +230,6 @@ class Server {
                 return res.redirect(302, '/');
             });
         } catch (e) {
-            console.log(`Caught: ${e}`);
             return res.status(500).send('Database Error');
         }
     }
@@ -247,6 +253,14 @@ class Server {
 
     listen(port, cb) {
         this.#http_server.listen(port, cb);
+    }
+
+    close(cb) {
+        this.#http_server.close(cb);
+    }
+
+    listening() {
+        return this.#http_server.listening;
     }
 }
 
