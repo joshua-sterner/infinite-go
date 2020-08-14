@@ -3,6 +3,7 @@ const Users = require('./users.js').Users;
 const db = require('./db.js');
 const child_process = require('child_process');
 const fs = require('fs');
+const InfiniteGoAPI = require('./api.js');
 
 
 //TODO rewrite this...
@@ -18,6 +19,8 @@ const users = new Users(db_connection_pool);
 
 const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
 
-const server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport});
+const api = new InfiniteGoAPI(users);
+
+const server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport, api: api});
 
 server.listen(3000, () => console.log('Server running'));

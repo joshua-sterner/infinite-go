@@ -161,7 +161,6 @@ class Server {
     }
 
 
-    //TODO Test
     _setup_websocket_server() {
         this.ws_sessions = new Map();
 
@@ -177,7 +176,6 @@ class Server {
         this.#wss = new WebSocket.Server({clientTracking: false, noServer: true});
 
         this.#http_server.on('upgrade', (req, socket, head) => {
-            //TODO test
             this.#session_parser(req, {}, () => { 
                 if (!req.session.passport || !req.session.passport.user) {
                     socket.destroy();
@@ -190,12 +188,12 @@ class Server {
         });
         
 
-        this.#wss.on('connection', (ws, req) => { //TODO test
+        this.#wss.on('connection', (ws, req) => {
             let user_id = req.session.passport.user;
             if (!this.ws_sessions.has(user_id)) {
                 this.ws_sessions.set(user_id, new Map()); //TODO make sure to clean up the session map on disconnect.
             }
-            this.ws_sessions.get(user_id).set(req.sessionID, ws); //TODO test, cleanup
+            this.ws_sessions.get(user_id).set(req.sessionID, ws); //TODO clean up on disconnect.
             this.#api.connect(user_id, req.sessionID);
             ws.on('close', () => {
                 this.#api.disconnect(user_id, req.sessionID);

@@ -46,7 +46,6 @@ class InfiniteGoAPI {
      * @param connection_id -
      */
     connect(user_id, connection_id) {
-        console.log(user_id);
     }
 
     /**
@@ -56,7 +55,6 @@ class InfiniteGoAPI {
      * @param connection_id -
      */
     disconnect(user_id, connection_id) {
-        console.log(user_id);
     }
 
     /**
@@ -77,10 +75,10 @@ class InfiniteGoAPI {
 
     message_mappings() {
         const message_map = new Map();
-        message_map.set('stone_placement_request', (msg, user_id) => {
+        message_map.set('stone_placement_request', (msg, user_id, connection_id) => {
             setTimeout(() => {
                 // TODO where should this confirmation actually happen?
-                this.send(user_id, JSON.stringify({
+                this.send(user_id, connection_id, JSON.stringify({
                     type: 'stone_placement_request_approved',
                     stones: [msg.stone]
                 }));
