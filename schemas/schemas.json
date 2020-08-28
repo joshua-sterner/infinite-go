@@ -1,0 +1,220 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "$id": "https://infinitego.net/schemas",
+    "definitions": {
+        "color": {
+            "type": "string",
+            "enum": ["black", "white"]
+        },
+        "stone": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "$ref": "#/definitions/color"
+                },
+                "position": {
+                    "type": "object",
+                    "properties": {
+                        "x": {
+                            "type": "number"
+                        },
+                        "y": {
+                            "type": "number"
+                        }
+                    }
+                }
+            }
+        },
+        "user": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "number"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "viewport": {
+                    "$ref": "#/definitions/viewport"
+                }
+            }
+        },
+        "viewport": {
+            "type": "object",
+            "properties": {
+                "top": {
+                    "type": "number"
+                },
+                "bottom": {
+                    "type": "number"
+                },
+                "left": {
+                    "type": "number"
+                },
+                "right": {
+                    "type": "number"
+                }
+            }
+        },
+        "team_change": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "team_change"
+                },
+                "color": {
+                    "$ref": "#/definitions/color"
+                },
+                "user_id": {
+                    "type": "number"
+                }
+            },
+            "required": ["type", "color"]
+        },
+        "viewport_coordinates": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "viewport_coordinates"
+                },
+                "viewport": {
+                    "$ref": "#/definitions/viewport"
+                }
+            },
+            "required": ["type", "viewport"]
+        },
+        "viewport_coordinates_client_response": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "viewport_coordinates_client_response"
+                },
+                "viewport": {
+                    "$ref": "#/definitions/viewport"
+                }
+            },
+            "required": ["type", "viewport"]
+        },
+        "ping": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "ping"
+                }
+            },
+            "required": ["type"]
+        },
+        "pong": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "pong"
+                }
+            },
+            "required": ["type"]
+        },
+        "viewport_stones": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "viewport_stones"
+                },
+                "stones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/stone"
+                    }
+                }
+            },
+            "required": ["type", "stones"]
+        },
+        "stones_placed": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "stone_placed"
+                },
+                "stones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/stone"
+                    }
+                }
+            },
+            "required": ["type", "stone"]
+        },
+        "stones_removed": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "stones_removed"
+                },
+                "stones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/stone"
+                    }
+                }
+            },
+            "required": ["type", "stones"]
+        },
+        "stone_placement_request": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "stone_placement_request"
+                },
+                "stone": {
+                    "$ref": "#/definitions/stone"
+                }
+            },
+            "required": ["type", "stone"]
+        },
+        "stone_placement_request_approved": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "stone_placement_request_approved"
+                },
+                "stones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/stone"
+                    }
+                }
+            },
+            "required": ["type", "stone"]
+        },
+        "stone_placement_request_denied": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "const": "stone_placement_request_denied"
+                },
+                "stone": {
+                    "$ref": "#/definitions/stone"
+                }
+            },
+            "required": ["type", "stone"]
+        }
+    },
+    "oneOf": [
+        {"$ref": "#/definitions/team_change"},
+        {"$ref": "#/definitions/viewport_coordinates"},
+        {"$ref": "#/definitions/viewport_coordinates_client_response"},
+        {"$ref": "#/definitions/ping"},
+        {"$ref": "#/definitions/pong"},
+        {"$ref": "#/definitions/viewport_stones"},
+        {"$ref": "#/definitions/stones_placed"},
+        {"$ref": "#/definitions/stones_removed"},
+        {"$ref": "#/definitions/stone_placement_request"},
+        {"$ref": "#/definitions/stone_placement_request_approved"},
+        {"$ref": "#/definitions/stone_placement_request_denied"}
+    ]
+}
