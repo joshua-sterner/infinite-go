@@ -39,7 +39,7 @@ function make_user(id) {
     };
 }
 
-describe('Server', () => {
+describe('Server', function() {
 
     let users;
     let server;

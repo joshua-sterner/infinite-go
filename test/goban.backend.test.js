@@ -90,6 +90,86 @@ class MockStones {
 
 }
 
+function colorGoban(a, indent=true) {
+    const whitespace = /^\s*$/;
+    let rows = a.split('\n');
+    let first_row = 0;
+    let last_row = 0;
+    for (let i=0; i < rows.length; i++) {
+        if (!whitespace.test(rows[i])) {
+            last_row = i;
+        }
+        if (whitespace.test(rows[i]) && last_row == 0) {
+            first_row = i+1;
+        }
+    }
+    rows = rows.slice(first_row, last_row+1);
+
+
+    let depth = rows[0].indexOf(':') / 4;
+
+    let width = 0;
+    for (let i=0; i < rows.length; i++) {
+        rows[i] = rows[i].substr(depth*4+2);
+        width = Math.max(rows[i].length, width);
+    }
+
+    const BLACK = '\033[1;30m';
+    const GRAY = '\033[0;37m';
+    const WHITE = '\033[1;37m';
+    let result = '\n';
+    for (let row = 0; row < rows.length; row++) {
+        if (indent) {
+            for (let i = 0; i < depth*2+2; i++) {
+                result += ' ';
+            }
+        }
+        for (let col = 0; col < width; col++) {
+            if (rows[row][col] == 'O') {
+                result += WHITE + 'O';
+            } else if (rows[row][col] == '@') {
+                result += BLACK + '@';
+            } else {
+                let c = (col % 2) ? '-' : '+';
+                result += GRAY + c;
+            }
+        }
+        result += '\033[0m\n';
+    }
+    return result;
+}
+
+function concatGoban(a, b) {
+    a = a.split('\n');
+    b = b.split('\n');
+    if (a.length != b.length) {
+        throw new Error('Cannot concatenate ASCII gobans of different dimensions');
+    }
+    let result = "";
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] == '' && b[i] == '') {
+            continue
+        }
+        let separator = '  -->  ';
+        result += a[i] + separator + b[i].trimLeft() + '\n'
+    }
+    return '\n' + result;
+}
+
+function gobanTest(a, b, cb) {
+    a = colorGoban(a);
+    if (cb === undefined) {
+        if (typeof(b) === 'string') {
+            b = colorGoban(b);
+            it(concatGoban(a, b));
+        } else {
+            it(a, b);
+        }
+    } else {
+        b = colorGoban(b);
+        it(concatGoban(a, b), cb);
+    }
+}
 
 describe('Goban (backend)', () => {
     let stones;
@@ -97,6 +177,35 @@ describe('Goban (backend)', () => {
     beforeEach(() => {
         stones = new MockStones();
         goban = new Goban(stones);
+    });
+    describe('request_stone_placement', function() {
+
+        it('emits stone placement denial event when grid point is already occupied.');
+        it('emits stone placement denial event when grid point is surrounded.');
+
+        describe('emits stone placement approval event when grid-point is available.', function() {
+            let a = `
+                : O O  
+                : O @ @
+                :   O @
+                : @    
+            `;
+            let b = `
+                : O O O
+                : @ @ @
+                : O O O
+                : @ @ @
+            `
+            gobanTest(a, b);
+        });
+
+        it('emits stone capture event when stones captured.');
+
+
+        //TODO handle stone placement request
+        //TODO emit stone placement approval event
+        //TODO emit stone placement denial event
+        //TODO emit stones captured event
     });
     describe('#place_stone', () => {
         [{x: -3, y: -4}, {x: 1, y: 2}].forEach((point) => {

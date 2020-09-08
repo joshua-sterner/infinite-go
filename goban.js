@@ -1,3 +1,5 @@
+const EventEmitter = require('events');
+
 class StonePlacementBuffer {
 
     constructor() {
@@ -53,8 +55,7 @@ class StonePlacementBuffer {
 
 }
 
-class Goban {
-
+class Goban extends EventEmitter{
 
     /**
      * Creates a Goban instance.
@@ -64,6 +65,7 @@ class Goban {
      * @param region_size the size of the square regions in which changes are tracked.
      */
     constructor(stones, region_size=256) {
+        super();
         this.stones = stones;
         this._placement_buffer = new StonePlacementBuffer;
         if (region_size <= 0) {
@@ -72,20 +74,10 @@ class Goban {
         this._region_size = region_size;
     }
 
-    _stone_placement_blocked(stone, adjacent_stones) {
-        const surrounded = adjacent_stones.left && adjacent_stones.right &&
-                           adjacent_stones.above && adjacent_stones.below;
-        if (surrounded) {
-            return adjacent_stones.left.color != stone.color &&
-                   adjacent_stones.right.color != stone.color &&
-                   adjacent_stones.above.color != stone.color &&
-                   adjacent_stones.below.color != stone.color;
-        }
-        return false;
-    }
-
-    region_size() {
-        return this._region_size;
+    async retrieve(rect) {
+        return await this.stones.get_by_rect(rect);
+        // make sure to prevent retrieval of incomplete state...
+        //   if currently executing process call, wait to retrieve
     }
 
     async place(stone) {
@@ -117,10 +109,27 @@ class Goban {
         this._placement_buffer.add(stone);
     }
 
-    async retrieve(rect) {
-        return await this.stones.get_by_rect(rect);
-        // make sure to prevent retrieval of incomplete state...
-        //   if currently executing process call, wait to retrieve
+
+    //TODO handle stone placement request
+    //TODO emit stone placement approval event
+    //TODO emit stone placement denial event
+    //TODO emit stones captured event
+
+
+    _stone_placement_blocked(stone, adjacent_stones) {
+        const surrounded = adjacent_stones.left && adjacent_stones.right &&
+                           adjacent_stones.above && adjacent_stones.below;
+        if (surrounded) {
+            return adjacent_stones.left.color != stone.color &&
+                   adjacent_stones.right.color != stone.color &&
+                   adjacent_stones.above.color != stone.color &&
+                   adjacent_stones.below.color != stone.color;
+        }
+        return false;
+    }
+
+    region_size() {
+        return this._region_size;
     }
 
     /**
