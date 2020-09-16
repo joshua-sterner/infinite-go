@@ -202,21 +202,37 @@ function concatGoban(a, b) {
     return '\n' + result;
 }
 
-function gobanTest(a, b, cb) {
+function gobanTest(name, a, b, cb) {
     // TODO create list of stones for each ascii goban
     // could parameterize placement/removal order, offset
     // could also accept an array for added flexibility...
+    if (a === undefined) {
+        it(name);
+        return;
+    }
     a = new ASCIIGoban(a);
     if (cb === undefined) {
-        if (typeof(b) === 'string') {
+        if (b === undefined) {
+            it(name + a.toString());
+        } else if (typeof(b) === 'string') {
             b = new ASCIIGoban(b);
-            it(concatGoban(a.toString(), b.toString()));
+            it(name + concatGoban(a.toString(), b.toString()));
+            return;
         } else {
-            it(a.toString(), b);
+            cb = b;
+            let cb2 = () => cb(a);
+            if (cb.length > 1) {
+                cb2 = (done) => cb(a, done);
+            }
+            it(name + a.toString(), cb2);
         }
     } else {
         b = new ASCIIGoban(b);
-        it(concatGoban(a.toString(), b.toString()), cb);
+        let cb2 = () => cb(a, b);
+        if (cb.length > 2) {
+            cb2 = (done) => cb(a, b, done);
+        }
+        it(name + concatGoban(a.toString(), b.toString()), cb2);
     }
 }
 
@@ -247,7 +263,8 @@ describe('Goban (backend)', () => {
                 : @ O @
                 : @ @ @
             `
-            gobanTest(a, b);
+            gobanTest('test', a, b, (a, b) => {
+            });
         });
 
         it('emits stone capture event when stones captured.');
