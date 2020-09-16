@@ -3,7 +3,6 @@ const Goban = require('../goban.js').Goban;
 
 //TODO implement ko fight rule...
 
-
 class MockStones {
 
     constructor() {
@@ -90,9 +89,99 @@ class MockStones {
 
 }
 
-function colorGoban(a, indent=true) {
+class ASCIIGoban {
+
+    constructor(goban) {
+        const whitespace = /^\s*$/;
+        let rows = goban.split('\n');
+        let first_row = 0;
+        let last_row = 0;
+        for (let i=0; i < rows.length; i++) {
+            if (!whitespace.test(rows[i])) {
+                last_row = i;
+            }
+            if (whitespace.test(rows[i]) && last_row == 0) {
+                first_row = i+1;
+            }
+        }
+        rows = rows.slice(first_row, last_row+1);
+
+
+        this.depth = rows[0].indexOf(':') / 4;
+
+        let width = 0;
+        for (let i=0; i < rows.length; i++) {
+            rows[i] = rows[i].substr(this.depth*4+2);
+            width = Math.max(rows[i].length, width);
+        }
+        this.width = width;
+        this.height = rows.length;
+        this.stones = [];
+
+        for (let row = 0; row < rows.length; row += 1) {
+            for (let col = 0; col < rows[row].length; col += 2) {
+                const stone_char = rows[row][col];
+                if (rows[row][col] == 'O') {
+                    if (!this.stones[row]) {
+                        this.stones[row] = [];
+                    }
+                    this.stones[row].push({color: 'white', col: col/2});
+                } else if (rows[row][col] == '@') {
+                    if (!this.stones[row]) {
+                        this.stones[row] = [];
+                    }
+                    this.stones[row].push({color: 'black', col: col/2});
+                }
+            }
+        }
+    }
+
+    toString(indent=true, color=true) {
+        const BLACK = '\x1b[1;30m';
+        const GRAY = '\x1b[0;37m';
+        const WHITE = '\x1b[1;37m';
+        const NONE = '\x1b[0m\n';
+
+        let result = '\n';
+        for (let row = 0; row < this.stones.length; row++) {
+            if (indent) {
+                for (let i = 0; i < this.depth*2 + 2; i++) {
+                    result += ' '
+                }
+            }
+            result += GRAY;
+            let col = 0;
+            for (let stone of this.stones[row]) {
+                while (col < stone.col*2) {
+                    col++;
+                    result += (col%2 == 0) ? '-' : '+';
+                }
+                col++;
+                if (stone.color == 'white') {
+                    result += WHITE + 'O';
+                } else {
+                    result += BLACK + '@';
+                }
+                result += GRAY;
+            }
+            while (col < this.width) {
+                result += (col++%2 == 0) ? '-' : '+';
+            }
+            result += NONE;
+        }
+        return result;
+    }
+
+    stones(transform) {
+        
+    }
+
+    // compare w/ other ASCIIGoban (returns list of added/removed stones)
+}
+
+function parseASCIIGoban(goban) {
     const whitespace = /^\s*$/;
-    let rows = a.split('\n');
+    let rows = goban.split('\n');
     let first_row = 0;
     let last_row = 0;
     for (let i=0; i < rows.length; i++) {
@@ -114,10 +203,8 @@ function colorGoban(a, indent=true) {
         width = Math.max(rows[i].length, width);
     }
 
-    const BLACK = '\033[1;30m';
-    const GRAY = '\033[0;37m';
-    const WHITE = '\033[1;37m';
-    let result = '\n';
+    // 
+
     for (let row = 0; row < rows.length; row++) {
         if (indent) {
             for (let i = 0; i < depth*2+2; i++) {
@@ -136,6 +223,13 @@ function colorGoban(a, indent=true) {
         }
         result += '\033[0m\n';
     }
+}
+
+function colorGoban(a, indent=true) {
+
+    let result = '\n';
+
+
     return result;
 }
 
@@ -157,17 +251,20 @@ function concatGoban(a, b) {
 }
 
 function gobanTest(a, b, cb) {
-    a = colorGoban(a);
+    // TODO create list of stones for each ascii goban
+    // could parameterize placement/removal order, offset
+    // could also accept an array for added flexibility...
+    a = new ASCIIGoban(a);
     if (cb === undefined) {
         if (typeof(b) === 'string') {
-            b = colorGoban(b);
-            it(concatGoban(a, b));
+            b = new ASCIIGoban(b);
+            it(concatGoban(a.toString(), b.toString()));
         } else {
-            it(a, b);
+            it(a.toString(), b);
         }
     } else {
-        b = colorGoban(b);
-        it(concatGoban(a, b), cb);
+        b = new ASCIIGoban(b);
+        it(concatGoban(a.toString(), b.toString()), cb);
     }
 }
 
@@ -188,12 +285,14 @@ describe('Goban (backend)', () => {
                 : O O  
                 : O @ @
                 :   O @
-                : @    
+                : @   @
+                : @ @ @
             `;
             let b = `
-                : O O O
-                : @ @ @
-                : O O O
+                : O O  
+                : O @ @
+                :   O @
+                : @ O @
                 : @ @ @
             `
             gobanTest(a, b);
@@ -201,12 +300,8 @@ describe('Goban (backend)', () => {
 
         it('emits stone capture event when stones captured.');
 
-
-        //TODO handle stone placement request
-        //TODO emit stone placement approval event
-        //TODO emit stone placement denial event
-        //TODO emit stones captured event
     });
+
     describe('#place_stone', () => {
         [{x: -3, y: -4}, {x: 1, y: 2}].forEach((point) => {
             const color = 'black';
