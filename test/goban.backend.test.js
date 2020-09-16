@@ -116,21 +116,21 @@ class ASCIIGoban {
         }
         this.width = width;
         this.height = rows.length;
-        this.stones = [];
+        this.stones_by_row = [];
 
         for (let row = 0; row < rows.length; row += 1) {
             for (let col = 0; col < rows[row].length; col += 2) {
                 const stone_char = rows[row][col];
                 if (rows[row][col] == 'O') {
-                    if (!this.stones[row]) {
-                        this.stones[row] = [];
+                    if (!this.stones_by_row[row]) {
+                        this.stones_by_row[row] = [];
                     }
-                    this.stones[row].push({color: 'white', col: col/2});
+                    this.stones_by_row[row].push({color: 'white', col: col/2});
                 } else if (rows[row][col] == '@') {
-                    if (!this.stones[row]) {
-                        this.stones[row] = [];
+                    if (!this.stones_by_row[row]) {
+                        this.stones_by_row[row] = [];
                     }
-                    this.stones[row].push({color: 'black', col: col/2});
+                    this.stones_by_row[row].push({color: 'black', col: col/2});
                 }
             }
         }
@@ -143,7 +143,7 @@ class ASCIIGoban {
         const NONE = '\x1b[0m\n';
 
         let result = '\n';
-        for (let row = 0; row < this.stones.length; row++) {
+        for (let row = 0; row < this.stones_by_row.length; row++) {
             if (indent) {
                 for (let i = 0; i < this.depth*2 + 2; i++) {
                     result += ' '
@@ -151,7 +151,7 @@ class ASCIIGoban {
             }
             result += GRAY;
             let col = 0;
-            for (let stone of this.stones[row]) {
+            for (let stone of this.stones_by_row[row]) {
                 while (col < stone.col*2) {
                     col++;
                     result += (col%2 == 0) ? '-' : '+';
@@ -173,64 +173,16 @@ class ASCIIGoban {
     }
 
     stones(transform) {
-        
-    }
-
-    // compare w/ other ASCIIGoban (returns list of added/removed stones)
-}
-
-function parseASCIIGoban(goban) {
-    const whitespace = /^\s*$/;
-    let rows = goban.split('\n');
-    let first_row = 0;
-    let last_row = 0;
-    for (let i=0; i < rows.length; i++) {
-        if (!whitespace.test(rows[i])) {
-            last_row = i;
-        }
-        if (whitespace.test(rows[i]) && last_row == 0) {
-            first_row = i+1;
-        }
-    }
-    rows = rows.slice(first_row, last_row+1);
-
-
-    let depth = rows[0].indexOf(':') / 4;
-
-    let width = 0;
-    for (let i=0; i < rows.length; i++) {
-        rows[i] = rows[i].substr(depth*4+2);
-        width = Math.max(rows[i].length, width);
-    }
-
-    // 
-
-    for (let row = 0; row < rows.length; row++) {
-        if (indent) {
-            for (let i = 0; i < depth*2+2; i++) {
-                result += ' ';
+        let transformed_stones = new Set();
+        for (let row = 0; row < this.stones_by_row.length; row++) {
+            for (let i of this.stones_by_row[row]) {
+                const pos = transform(row, i.col);
+                transformed_stones.add({color: i.color, x: pos.x, y: pos.y});
             }
         }
-        for (let col = 0; col < width; col++) {
-            if (rows[row][col] == 'O') {
-                result += WHITE + 'O';
-            } else if (rows[row][col] == '@') {
-                result += BLACK + '@';
-            } else {
-                let c = (col % 2) ? '-' : '+';
-                result += GRAY + c;
-            }
-        }
-        result += '\033[0m\n';
     }
-}
 
-function colorGoban(a, indent=true) {
-
-    let result = '\n';
-
-
-    return result;
+    //TODO compare w/ other ASCIIGoban (returns list of added/removed stones)
 }
 
 function concatGoban(a, b) {
@@ -239,13 +191,13 @@ function concatGoban(a, b) {
     if (a.length != b.length) {
         throw new Error('Cannot concatenate ASCII gobans of different dimensions');
     }
-    let result = "";
+    let result = '';
     for (let i = 0; i < a.length; i++) {
         if (a[i] == '' && b[i] == '') {
-            continue
+            continue;
         }
         let separator = '  -->  ';
-        result += a[i] + separator + b[i].trimLeft() + '\n'
+        result += a[i] + separator + b[i].trimLeft() + '\n';
     }
     return '\n' + result;
 }
