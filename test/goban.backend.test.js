@@ -120,7 +120,6 @@ class ASCIIGoban {
 
         for (let row = 0; row < rows.length; row += 1) {
             for (let col = 0; col < rows[row].length; col += 2) {
-                const stone_char = rows[row][col];
                 if (rows[row][col] == 'O') {
                     if (!this.stones_by_row[row]) {
                         this.stones_by_row[row] = [];
@@ -134,9 +133,11 @@ class ASCIIGoban {
                 }
             }
         }
+        this._transform = (x, y) => {return {x: x, y: y};};
     }
 
-    toString(indent=true, color=true) {
+    // Note that this ignores the transform function.
+    toString(indent=true) {
         const BLACK = '\x1b[1;30m';
         const GRAY = '\x1b[0;37m';
         const WHITE = '\x1b[1;37m';
@@ -172,17 +173,55 @@ class ASCIIGoban {
         return result;
     }
 
+    transform(f) {
+        this._transform = f;
+    }
+
     stones(transform) {
         let transformed_stones = new Set();
         for (let row = 0; row < this.stones_by_row.length; row++) {
             for (let i of this.stones_by_row[row]) {
-                const pos = transform(row, i.col);
+                let pos = this._transform(i.col, row);
+                if (transform !== undefined) {
+                    pos = transform(i.col, row);
+                }
                 transformed_stones.add({color: i.color, x: pos.x, y: pos.y});
             }
         }
     }
 
-    //TODO compare w/ other ASCIIGoban (returns list of added/removed stones)
+    compare(ascii_goban) {
+        function toMap(stone_set) {
+            const m = new Map();
+            for (let i of stone_set) {
+                if (!m.has(i.y)) {
+                    m[i.y] = new Map();
+                }
+                m[i.y][i.x] = i.color;
+            }
+            return m;
+        }
+        const a = this.stones();
+        const b = ascii_goban.stones();
+        const a_map = toMap(a);
+        const b_map = toMap(b);
+        const added = new Set();
+        const removed = new Set();
+
+        for (let i of a) {
+            if (!b_map.has(i.y) || !b_map.has(i.x) || b_map[i.y][i.x] != i.color) {
+                removed.add(i);
+            }
+        }
+        for (let i of b) {
+            if (!a_map.has(i.y) || !a_map.has(i.x) || a_map[i.y][i.x] != i.color) {
+                added.add(i);
+            }
+        }
+
+        return {added: added, removed: removed};
+
+    }
 }
 
 function concatGoban(a, b) {
