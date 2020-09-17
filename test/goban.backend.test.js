@@ -242,9 +242,13 @@ function concatGoban(a, b) {
 }
 
 function gobanTest(name, a, b, cb) {
-    // TODO create list of stones for each ascii goban
-    // could parameterize placement/removal order, offset
-    // could also accept an array for added flexibility...
+    // Assume name is actually ascii goban if it has more than one line.
+    if (name.split('\n').length > 1 && cb === undefined) {
+        cb = b;
+        b = a;
+        a = name;
+        name = '';
+    }
     if (a === undefined) {
         it(name);
         return;
@@ -302,7 +306,7 @@ describe('Goban (backend)', () => {
                 : @ O @
                 : @ @ @
             `
-            gobanTest('test', a, b, (a, b) => {
+            gobanTest(a, b, (a, b) => {
             });
         });
 
