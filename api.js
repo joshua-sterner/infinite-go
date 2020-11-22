@@ -119,7 +119,7 @@ class InfiniteGoAPI {
                 } else {
                     this.send(user_id, connection_id, JSON.stringify({
                         type: 'stone_placement_request_denied',
-                        stones: [msg.stone]
+                        stone: msg.stone
                     }));
                 }
             });

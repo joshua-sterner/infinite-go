@@ -106,6 +106,7 @@ class Server {
      * @param {number} args.default_viewport.bottom - The y position of the bottom of the viewport.
      * @param {number} args.default_viewport.left - The x position of the left of the viewport.
      * @param {number} args.default_viewport.right - The x position of the right of the viewport.
+     * @param {number} args.dev_build - Set this to true for dev builds.
      * @param {InfiniteGoAPI} args.api - The Infinite Go API class.
      */
     constructor(args) {
@@ -136,7 +137,7 @@ class Server {
 
         app.get('/', (req, res) => {
             if (req.isAuthenticated()) {
-                return res.status(200).render('game');
+                return res.status(200).render('game', {dev_build: args.dev_build});
             } else {
                 return res.redirect(302, '/login');
             }

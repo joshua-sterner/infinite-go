@@ -273,6 +273,7 @@ class Goban {
     set_stones(stones) {
         //TODO Fix this!
         this.stones = stones;
+        window.requestAnimationFrame(() => this._draw());
     }
 
     /**
