@@ -46,4 +46,7 @@ describe('InfiniteGoAPI', function() {
         it('Sent in response to stone denial event from Goban.');
         it('Sent only to correct conections');
     });
+    describe('switch_server', function() {
+        it('Sent in response to switch server event from BattleGrounds.');
+    });
 });

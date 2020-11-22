@@ -1,3 +1,27 @@
+/**
+ * @typedef {object} Stone
+ * @property {number} x - The x position of the stone on the board.
+ * @property {number} y - The y position of the stone on the board.
+ * @property {string} color - The color of this stone, either 'black' or
+ * 'white'.
+ * @property {string} placed_by - The username of the user who placed this
+ * stone.
+ * @property {string} processed - The state of this stone in the capture pass.
+ * One of:
+ * - 'unprocessed' - Placement of this stone has not been taken into account by
+ * a capture pass.
+ *
+ * - 'processing' - placement of this stone is being taken into account by the
+ * current capture pass.
+ *
+ * - 'processed' - placement of this stone has been taken into account by a
+ * capture pass.
+ * @property {Date} date_placed - The date and time of placement of this stone.
+ */
+
+/**
+ * This class represents a database which can store and retrieve go stones.
+ */
 class Stones {
 
     constructor(db_connection_pool) {

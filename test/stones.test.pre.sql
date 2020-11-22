@@ -11,6 +11,17 @@ CREATE TABLE stones (
     processed processed_state NOT NULL,
     PRIMARY KEY (x, y)
 );
+CREATE TABLE stone_groups (
+    id INTEGER NOT NULL,
+    opposing_grid_point_count INTEGER NOT NULL,
+    total_grid_point_count INTEGER NOT NULL,
+    PRIMARY KEY (id)
+);
+CREATE TABLE stone_group_pointers (
+    id INTEGER NOT NULL,
+    stone_group INTEGER NOT NULL REFERENCES stone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id)
+);
 
 INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (12, 34, 'first_test_user', '2019-12-13T14:13:12.345Z', 'white', 'processed');
 INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (-12, -34, 'second_test_user', '2019-12-15T14:13:12.345Z', 'black', 'processing');
