@@ -1,17 +1,4 @@
 const goban = new Goban(document.getElementById('goban'));
-goban.stones = [
-    {color:'white', x:2, y:3},
-    {color:'black', x:5, y:7},
-    {color:'black', x:6, y:6},
-    {color:'black', x:6, y:8},
-    {color:'white', x:6, y:7},
-    {color:'white', x:7, y:8},
-    {color:'white', x:7, y:6},
-    {color:'white', x:8, y:7},
-    {color:'black', x:0, y:0},
-    {color:'black', x:1, y:0},
-    {color:'black', x:0, y:1},
-];
 window.addEventListener('resize', () => goban.resize());
 window.addEventListener('load', () => {
     goban.resize();

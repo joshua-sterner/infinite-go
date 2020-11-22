@@ -15,6 +15,13 @@ class InfiniteGoWebsocketClient {
     constructor(ws, goban) {
         this.set_web_socket(ws);
 
+        ws.onopen = () => {
+            ws.send(JSON.stringify({
+                type: 'viewport_coordinates',
+                viewport: goban.get_viewport() 
+            }));
+        };
+
         // set goban callbacks
         goban.on_stone_placement_request((stone) => {
             ws.send(JSON.stringify({

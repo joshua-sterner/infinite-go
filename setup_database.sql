@@ -13,7 +13,7 @@ CREATE TYPE processed_state as ENUM ('unprocessed', 'processing', 'processed');
 CREATE TABLE stones (
     x INTEGER NOT NULL,
     y INTEGER NOT NULL,
-    placed_by VARCHAR(127) NOT NULL REFERENCES users (username) ON DELETE CASCADE ON UPDATE CASCADE,
+    placed_by INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE ON UPDATE CASCADE,
     date_placed TIMESTAMP NOT NULL,
     color stone_color NOT NULL,
     processed processed_state NOT NULL,
