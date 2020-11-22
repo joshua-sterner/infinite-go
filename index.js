@@ -19,6 +19,8 @@ try {
 
 if (settings.db.database == undefined) {
     settings.db.database = 'infinite-go';
+    settings.db.host = 'localhost';
+    settings.db.user = 'root';
 }
 
 const db_connection_url = db.make_connection_url(settings.db);
