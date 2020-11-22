@@ -166,6 +166,8 @@ class Goban {
             this._ctx.strokeStyle = color;
             this._ctx.fillStyle = 'rgba(0,0,0,0)';
         }
+        //TODO fix this
+        unsynced = false;
         if (unsynced && !unconfirmed) {
             this._ctx.globalAlpha = 0.5;
         }
@@ -311,6 +313,7 @@ class Goban {
             }
         }
         this.stones.push(stone);
+        window.requestAnimationFrame(() => this._draw());
     }
 
     /**
@@ -323,5 +326,6 @@ class Goban {
                 this.stones.splice(i, 1);
             }
         }
+        window.requestAnimationFrame(() => this._draw());
     }
 }

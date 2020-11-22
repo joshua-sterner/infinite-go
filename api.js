@@ -105,7 +105,17 @@ class InfiniteGoAPI {
                         type: 'stone_placement_request_approved',
                         stones: [msg.stone]
                     }));
-                    //TODO notify other users
+                    //TODO don't send if not close enough to viewport
+                    for (let i of this.connections) {
+                        for (let j of i[1]) {
+                            if (i[0] != user_id || j != connection_id) {
+                                this.send(i[0], j, JSON.stringify({
+                                    type: 'stone_placed',
+                                    stone: msg.stone
+                                }));
+                            }
+                        }
+                    }
                 } else {
                     this.send(user_id, connection_id, JSON.stringify({
                         type: 'stone_placement_request_denied',
