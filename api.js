@@ -98,25 +98,32 @@ class InfiniteGoAPI {
     message_mappings() {
         const message_map = new Map();
         message_map.set('stone_placement_request', (msg, user_id, connection_id) => {
-            setTimeout(() => {
-                // TODO where should this confirmation actually happen?
-                this.send(user_id, connection_id, JSON.stringify({
-                    type: 'stone_placement_request_approved',
-                    stones: [msg.stone]
-                }));
-                this.connections.forEach((i) => {
-                    i.forEach((j) => {
-                        if (j != connection_id) {
-                            this.send(user_id, j, JSON.stringify({
-                                type: 'stone_placed',
-                                stones: [msg.stone] //TODO need to santize this in real implementation
-                            }));
-                        }
-                    });
-                });
-            }, 1500);
+            msg.stone.placed_by = user_id;
+            this.#goban.place(msg.stone).then((placed) => {
+                if (placed) {
+                    this.send(user_id, connection_id, JSON.stringify({
+                        type: 'stone_placement_request_approved',
+                        stones: [msg.stone]
+                    }));
+                    //TODO notify other users
+                } else {
+                    this.send(user_id, connection_id, JSON.stringify({
+                        type: 'stone_placement_request_denied',
+                        stones: [msg.stone]
+                    }));
+                }
+            });
         });
         message_map.set('viewport_coordinates', (msg, user_id, connection_id) => {
+            this.#goban.retrieve({x0: msg.viewport.left,
+                x1: msg.viewport.right,
+                y1: msg.viewport.bottom,
+                y0: msg.viewport.top}).then((stones) => {
+                this.send(user_id, connection_id, JSON.stringify({
+                    type: 'viewport_stones',
+                    stones: stones
+                }));
+            });
             this.connections.get(user_id).forEach((i) => { //TODO test
                 if (i != connection_id) {
                     this.send(user_id, i, JSON.stringify({

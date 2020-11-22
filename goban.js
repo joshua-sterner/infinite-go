@@ -40,7 +40,7 @@ class Goban {
     async place(stone) {
         const x = stone.x;
         const y = stone.y;
-        let rect = {x0: x - 1, y0: y - 1, x1: x + 1, y2: y + 1};
+        let rect = {x0: x - 1, y0: y - 1, x1: x + 1, y1: y + 1};
         let nearby_stones = await this.#stones.get_by_rect(rect);
         let opponent_left = false;
         let opponent_right = false;

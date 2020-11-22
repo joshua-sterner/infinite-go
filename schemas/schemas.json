@@ -12,16 +12,11 @@
                 "color": {
                     "$ref": "#/definitions/color"
                 },
-                "position": {
-                    "type": "object",
-                    "properties": {
-                        "x": {
-                            "type": "number"
-                        },
-                        "y": {
-                            "type": "number"
-                        }
-                    }
+                "x": {
+                    "type": "number"
+                },
+                "y": {
+                    "type": "number"
                 }
             }
         },

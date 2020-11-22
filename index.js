@@ -4,6 +4,8 @@ const db = require('./db.js');
 const child_process = require('child_process');
 const fs = require('fs');
 const InfiniteGoAPI = require('./api.js');
+const Goban = require('./goban.js').Goban;
+const Stones = require('./stones.js').Stones;
 
 
 //TODO rewrite this...
@@ -19,7 +21,11 @@ const users = new Users(db_connection_pool);
 
 const default_viewport = {'top':10, 'right':9, 'bottom':-8, 'left':-7};
 
-const api = new InfiniteGoAPI(users);
+const stones = new Stones(db_connection_pool);
+
+const goban = new Goban(stones);
+
+const api = new InfiniteGoAPI(users, goban);
 
 const server = new Server({users:users, session_secret:'test session secret', default_viewport:default_viewport, api: api});
 

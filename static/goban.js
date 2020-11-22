@@ -104,8 +104,8 @@ class Goban {
         if (!this.unconfirmed_stone) {
             this._place_unconfirmed_stone(this._stone_color, out_pos);
         } else {
-            if (this.unconfirmed_stone.position.x == out_pos.x &&
-                this.unconfirmed_stone.position.y == out_pos.y) {
+            if (this.unconfirmed_stone.x == out_pos.x &&
+                this.unconfirmed_stone.y == out_pos.y) {
                 this._request_stone_placement();
             } else {
                 this._place_unconfirmed_stone(this._stone_color, out_pos);
@@ -209,17 +209,17 @@ class Goban {
         this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
         this._draw_grid();
         this.stones.forEach((stone) => {
-            this._draw_stone(stone.color, stone.position, false, stone.unsynced);
+            this._draw_stone(stone.color, {x: stone.x, y: stone.y}, false, stone.unsynced);
         });
         if (this.unconfirmed_stone) {
-            this._draw_stone(this.unconfirmed_stone.color, this.unconfirmed_stone.position, true);
+            this._draw_stone(this.unconfirmed_stone.color, {x: this.unconfirmed_stone.x, y: this.unconfirmed_stone.y}, true);
         }
     }
 
     _point_empty(pos) {
         for (let i = 0; i < this.stones.length; i++) {
             const stone = this.stones[i];
-            if (pos.x == stone.position.x && pos.y == stone.position.y) {
+            if (pos.x == stone.x && pos.y == stone.y) {
                 return false;
             }
         }
@@ -228,7 +228,7 @@ class Goban {
 
     _place_unconfirmed_stone(color, pos) {
         if (this._point_empty(pos)) {
-            this.unconfirmed_stone = {color: color, position: pos, unsynced: true};
+            this.unconfirmed_stone = {color: color, x: pos.x, y: pos.y, unsynced: true};
         }
     }
 
@@ -244,8 +244,8 @@ class Goban {
     grant_stone_placement_request(stone) {
         this.stones.forEach((i) => {
             if (i.color == stone.color &&
-                i.position.x == stone.position.x &&
-                i.position.y == stone.position.y) {
+                i.x == stone.x &&
+                i.y == stone.y) {
                 i.unsynced = false;
             }
         });
@@ -269,6 +269,8 @@ class Goban {
     }
 
     set_stones(stones) {
+        //TODO Fix this!
+        this.stones = stones;
     }
 
     /**
@@ -302,8 +304,8 @@ class Goban {
      */
     add_stone(stone) {
         for (let i = 0; i < this.stones.length; i++) {
-            if (this.stones[i].position.x == stone.position.x &&
-                this.stones[i].position.y == stone.position.y) {
+            if (this.stones[i].x == stone.x &&
+                this.stones[i].y == stone.y) {
                 this.stones[i] = stone;
                 return;
             }
@@ -316,8 +318,8 @@ class Goban {
      */
     remove_stone(stone) {
         for (let i = 0; i < this.stones.length; i++) {
-            if (this.stones[i].position.x == stone.position.x &&
-                this.stones[i].position.y == stone.position.y) {
+            if (this.stones[i].x == stone.x &&
+                this.stones[i].y == stone.y) {
                 this.stones.splice(i, 1);
             }
         }

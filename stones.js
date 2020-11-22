@@ -46,7 +46,7 @@ class Stones {
 
     get_by_rect(rect) {
         return new Promise((resolve, reject) => {
-            if (!rect.x0 || !rect.y0 || !rect.x1 || !rect.y1) {
+            if (!Number.isInteger(rect.x0) || !Number.isInteger(rect.y0) || !Number.isInteger(rect.x1) || !Number.isInteger(rect.y1)) {
                 return reject(new Error('get_by_rect(rect): rect must have x0, x1, y0 and y1 fields.'));
             }
             const x_min = Math.min(rect.x0, rect.x1);
