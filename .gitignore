@@ -2,3 +2,4 @@
 /test/test_db_connection.json
 /out
 /.nyc_output
+/settings.json
