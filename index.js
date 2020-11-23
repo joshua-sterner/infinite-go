@@ -13,6 +13,9 @@ let settings = JSON.parse(fs.readFileSync(settings_filename));
 if (settings.dev_build == undefined) {
     settings.dev_build = false;
 }
+if (settings.port == undefined) {
+    settings.port = 3000;
+}
 
 const db_connection_pool = new db.Pool(settings.db);
 
@@ -24,7 +27,7 @@ const start_server = () => {
     const api = new InfiniteGoAPI(users, goban);
     const session_secret = settings.session_secret || crypto.randomBytes(128).toString('base64');
     const server = new Server({users:users, session_secret: session_secret, default_viewport:default_viewport, api: api, dev_build: settings.dev_build});
-    server.listen(3000, () => console.log('Server running'));
+    server.listen(settings.port, () => console.log('Server running'));
 };
 
 // Attempt to initialize db
