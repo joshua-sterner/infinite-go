@@ -65,6 +65,9 @@ class InfiniteGoAPI {
      * @param connection_id -
      */
     disconnect(user_id, connection_id) {
+        if (!this.connections.has(user_id)) {
+            return;
+        }
         this.connections.get(user_id).delete(connection_id);
         if (this.connections.get(user_id).size == 0) {
             this.connections.delete(user_id);
