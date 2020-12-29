@@ -1,29 +1,11 @@
-DROP TYPE stone_color;
-CREATE TYPE stone_color as ENUM ('black', 'white');
-DROP TYPE processed_state;
-CREATE TYPE processed_state as ENUM ('unprocessed', 'processing', 'processed');
-CREATE TABLE stones (
-    x INTEGER NOT NULL,
-    y INTEGER NOT NULL,
-    placed_by VARCHAR(127) NOT NULL REFERENCES users (username) ON DELETE CASCADE ON UPDATE CASCADE,
-    date_placed TIMESTAMP NOT NULL,
-    color stone_color NOT NULL,
-    processed processed_state NOT NULL,
-    PRIMARY KEY (x, y)
-);
-CREATE TABLE stone_groups (
-    id INTEGER NOT NULL,
-    opposing_grid_point_count INTEGER NOT NULL,
-    total_grid_point_count INTEGER NOT NULL,
-    PRIMARY KEY (id)
-);
-CREATE TABLE stone_group_pointers (
-    id INTEGER NOT NULL,
-    stone_group INTEGER NOT NULL REFERENCES stone_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    PRIMARY KEY (id)
-);
+INSERT INTO stone_groups (captured_perimeter, perimeter) VALUES (0, 4), (0, 4), (0, 4), (0, 4);
+INSERT INTO stone_group_pointers (stone_group) VALUES (1), (2), (3), (4);
 
-INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (12, 34, 'first_test_user', '2019-12-13T14:13:12.345Z', 'white', 'processed');
-INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (-12, -34, 'second_test_user', '2019-12-15T14:13:12.345Z', 'black', 'processing');
-INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (-123, -456, 'first_test_user', '2019-12-15T14:13:12.345Z', 'white', 'unprocessed');
-INSERT INTO stones (x, y, placed_by, date_placed, color, processed) VALUES (-456, -789, 'second_test_user', '2019-12-15T14:13:12.345Z', 'white', 'processing');
+INSERT INTO users (username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ('first_test_user', 'nobody@nonexistent.tld', 'pw1', '2019-11-13T15:13:12.345Z', 10, 11, 12, 13);
+INSERT INTO users (username, email, password, date_created, viewport_top, viewport_right, viewport_bottom, viewport_left) VALUES ('second_test_user', 'second@example.io', 'pw2', '2012-01-23T12:34:56.789Z', 6, 11, -6, -11);
+
+INSERT INTO stones (x, y, placed_by, date_placed, color, stone_group_pointer) VALUES (12, 34, 'first_test_user', '2019-12-13T14:13:12.345Z', 'white', 1);
+INSERT INTO stones (x, y, placed_by, date_placed, color, stone_group_pointer) VALUES (-12, -34, 'second_test_user', '2019-12-15T14:13:12.345Z', 'black', 2);
+INSERT INTO stones (x, y, placed_by, date_placed, color, stone_group_pointer) VALUES (-123, -456, 'first_test_user', '2019-12-15T14:13:12.345Z', 'white', 3);
+INSERT INTO stones (x, y, placed_by, date_placed, color, stone_group_pointer) VALUES (-456, -789, 'second_test_user', '2019-12-15T14:13:12.345Z', 'white', 4);
+

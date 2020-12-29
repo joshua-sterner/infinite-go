@@ -10,7 +10,7 @@ const test_stone_1 = {
     placed_by: 'first_test_user',
     date_placed: '2019-12-13T14:13:12.345Z',
     color: 'white',
-    processed: 'processed'
+    stone_group_pointer: 1
 };
 
 const test_stone_2 = {
@@ -19,7 +19,7 @@ const test_stone_2 = {
     placed_by: 'second_test_user',
     date_placed: '2019-12-15T14:13:12.345Z',
     color: 'black',
-    processed: 'processing'
+    stone_group_pointer: 2
 };
 
 const test_stone_3 = {
@@ -28,7 +28,7 @@ const test_stone_3 = {
     placed_by: 'first_test_user',
     date_placed: '2019-12-15T14:13:12.345Z',
     color: 'white',
-    processed: 'unprocessed'
+    stone_group_pointer: 3
 };
 
 const test_stone_4 = {
@@ -37,7 +37,7 @@ const test_stone_4 = {
     placed_by: 'second_test_user',
     date_placed: '2019-12-15T14:13:12.345Z',
     color: 'white',
-    processed: 'processing'
+    stone_group_pointer: 4
 };
 
 /**
@@ -50,7 +50,7 @@ function stones_equal(lhs, rhs) {
         lhs.placed_by === rhs.placed_by &&
         lhs.date_placed === rhs.date_placed &&
         lhs.color === rhs.color &&
-        lhs.processed === rhs.processed;
+        lhs.stone_group === rhs.stone_group;
 }
 
 /**
@@ -71,11 +71,8 @@ describe('Stones', () => {
     });
 
     beforeEach(() => {
-        // prevent psql command from warning about cascading drop
-        child_process.execSync(`psql -c "DROP TABLE IF EXISTS stones;" ${db.connection_url}`);
-        // need to load users test data because the stone table has
-        // a foreign key referencing the usernames column in users
-        child_process.execSync(`psql -f test/users.test.pre.sql ${db.connection_url}`);
+        child_process.execSync(`psql -q -f test/clear_database.sql ${db.connection_url}`);
+        child_process.execSync(`psql -f setup_database.sql ${db.connection_url}`);
         child_process.execSync(`psql -f test/stones.test.pre.sql ${db.connection_url}`);
         stones = new Stones(db_connection_pool);
     });
@@ -133,17 +130,10 @@ describe('Stones', () => {
                 placed_by: 'first_test_user',
                 date_placed: '4321-01-23T12:34:56.789Z',
                 color: 'black',
-                processed: 'unprocessed'
+                stone_group_pointer: 5
             };
         });
-        it('successfully creates stone with all fields provided and processed set to unprocessed', async function() {
-            await stones.create(test_stone_5);
-            const stone_list = await stones.get_by_rect({x0: -123, y0: 456, x1: -123, y1: 456});
-            assert.equal(stone_list.length, 1);
-            assert.deepStrictEqual(stone_list[0], test_stone_5);
-        });
-        it('successfully creates stone with all fields provided and processed set to to processed', async function() {
-            test_stone_5.processed = 'processed';
+        it('successfully creates stone with all fields provided', async function() {
             await stones.create(test_stone_5);
             const stone_list = await stones.get_by_rect({x0: -123, y0: 456, x1: -123, y1: 456});
             assert.equal(stone_list.length, 1);
@@ -177,12 +167,6 @@ describe('Stones', () => {
             await stones.create(test_stone_5);
             const stone_list = await stones.get_by_rect({x0: -123, y0: 456, x1: -123, y1: 456});
             assert(timestamps_equal(stone_list[0].date_placed, now.toJSON()));
-        });
-        it('stone created without supplied processed field sets processed to unprocessed', async function() {
-            delete test_stone_5.processed;
-            await stones.create(test_stone_5);
-            const stone_list = await stones.get_by_rect({x0: -123, y0: 456, x1: -123, y1: 456});
-            assert.equal(stone_list[0].processed, 'unprocessed');
         });
         ['x', 'y', 'placed_by', 'color'].forEach((field) => {
             it(`rejects when ${field} is null`, async function() {
@@ -233,45 +217,4 @@ describe('Stones', () => {
             await assert.rejects(stones.delete_by_point({x: 12, y: 34}));
         });
     });
-
-    describe('#get_unprocessed_for_processing', () => {
-        it('retrieves all unprocssed stones', async function() {
-            const  stone_list = await stones.get_unprocessed_for_processing();
-            assert.equal(stone_list.length, 3);
-            let stone_3 = Object.assign({}, test_stone_3);
-            stone_3.processed = 'processing';
-            assert.equal(stone_list.length, 3);
-            assert(stone_in_list(test_stone_2, stone_list));
-            assert(stone_in_list(stone_3, stone_list));
-            assert(stone_in_list(test_stone_4, stone_list));
-        });
-        it('sets all retrieved stones as processing', async function() {
-            await stones.get_unprocessed_for_processing();
-            const stone_2 = (await stones.get_by_rect({x0: -12, y0: -34, x1: -12, y1: -34}))[0];
-            const stone_3 = (await stones.get_by_rect({x0: -123, y0: -456, x1: -123, y1: -456}))[0];
-            const stone_4 = (await stones.get_by_rect({x0: -456, y0: -789, x1: -456, y1: -789}))[0];
-            assert.equal(stone_2.processed, 'processing');
-            assert.equal(stone_3.processed, 'processing');
-            assert.equal(stone_4.processed, 'processing');
-        });
-        it('rejects on query error', async function() {
-            let stones = new Stones(db.mock_throwing_pool);
-            await assert.rejects(stones.get_unprocessed_for_processing());
-        });
-    });
-
-    describe('#set_processing_to_processed', () => {
-        it('sets processing stones to processed', async function() {
-            await stones.set_processing_to_processed();
-            const stone_2 = (await stones.get_by_rect({x0: -12, y0: -34, x1: -12, y1: -34}))[0];
-            const stone_4 = (await stones.get_by_rect({x0: -456, y0: -789, x1: -456, y1: -789}))[0];
-            assert.equal(stone_2.processed, 'processed');
-            assert.equal(stone_4.processed, 'processed');
-        });
-        it('rejects on query error', async function() {
-            let stones = new Stones(db.mock_throwing_pool);
-            await assert.rejects(stones.set_processing_to_processed());
-        });
-    });
-
 });
